@@ -108,8 +108,19 @@ static DigitalOut shutdown_pin(PC_6);
 static VL53L0X range(&devI2c, &shutdown_pin, PC_7);
 #endif
 
-/* Simple main function */
+#include "spec_co.hpp"
+
 int main() {
+  spec::CarbonMonoxide co(PA_0, PA_1);
+  co.initialize();
+
+  while(1) {
+    printf("Data: %s\r\n", co.PUB_BUF_);
+    ThisThread::sleep_for(1000);
+  }
+
+  return 0;
+
   uint8_t id;
   float value1, value2;
 //  char buffer1[32], buffer2[32];
