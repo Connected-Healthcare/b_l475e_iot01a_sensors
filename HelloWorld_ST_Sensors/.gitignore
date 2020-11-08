@@ -18,3 +18,4 @@ mbed-os
 
 # Files
 *.pyc
+*.VC.DB*
