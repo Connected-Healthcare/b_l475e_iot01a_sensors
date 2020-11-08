@@ -1,3 +1,5 @@
-# README
+# Getting Started
 
-- `mbed import http://os.mbed.com/teams/ST/code/HelloWorld_ST_Sensors/`
+- Clone this repository
+- `cd HelloWorld_ST_Sensors`
+- `mbed deploy`
