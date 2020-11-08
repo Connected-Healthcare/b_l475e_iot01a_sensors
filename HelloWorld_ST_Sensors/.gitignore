@@ -1,0 +1,20 @@
+# Other Version Control
+.hg
+.lock
+
+# Build
+BUILD
+build
+
+# Folders
+HTS221
+LIS3MDL
+LPS22HB
+LSM6DSL
+LSM303AGR
+VL53L0X
+mbed
+mbed-os
+
+# Files
+*.pyc
