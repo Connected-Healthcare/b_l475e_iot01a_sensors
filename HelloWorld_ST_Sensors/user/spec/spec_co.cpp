@@ -33,16 +33,28 @@ void CarbonMonoxide::interrupt_cb() {
   }
 
   if (data == '\n') {
-    // TODO, Proces this string here
-    // Remove this later
-    {
-      memset(PUB_BUF_, 0, kBufferSize);
-      strcpy(PUB_BUF_, BUF_);
-    }
-
+    process_raw_co_data();
     memset(BUF_, 0, kBufferSize);
     counter_ = 0;
   }
+}
+
+void CarbonMonoxide::process_raw_co_data() {
+  constexpr char kDelim[] = ",";
+  // id
+  char *token = strtok(BUF_, kDelim);
+
+  // convert to co_ppb
+  token = strtok(NULL, kDelim);
+  gas_concentration_ = strtoul(token, NULL, 0);
+
+  // convert to temperature
+  token = strtok(NULL, kDelim);
+  temperature_ = atoi(token);
+
+  // convert to humidity
+  token = strtok(NULL, kDelim);
+  relative_humidity_ = atoi(token);
 }
 
 } // namespace spec

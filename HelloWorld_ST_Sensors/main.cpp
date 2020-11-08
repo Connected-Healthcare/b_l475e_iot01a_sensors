@@ -115,7 +115,7 @@ int main() {
   co.initialize();
 
   while(1) {
-    printf("Data: %s\r\n", co.PUB_BUF_);
+    printf("d: %lu %d %d\r\n", co.get_gas_concentration(), co.get_temperature(), co.get_relative_humidity());
     ThisThread::sleep_for(1000);
   }
 

@@ -10,10 +10,7 @@ private:
   static constexpr size_t kBufferSize = 200;
 
 public:
-  CarbonMonoxide(PinName tx, PinName rx) : co_uart_(tx, rx), counter_(0) {
-    memset(BUF_, 0, kBufferSize);
-    memset(PUB_BUF_, 0, kBufferSize);
-  }
+  CarbonMonoxide(PinName tx, PinName rx) : co_uart_(tx, rx) {}
 
   void initialize();
 
@@ -23,22 +20,22 @@ public:
 
 private:
   void thread_start();
-  void interrupt_cb();
 
-public:
-  char PUB_BUF_[kBufferSize];
+  void interrupt_cb();
+  void process_raw_co_data();
 
 private:
   RawSerial co_uart_;
   Thread co_thread_;
-  char BUF_[kBufferSize];
-  size_t counter_;
+
+  char BUF_[kBufferSize] = {0};
+  size_t counter_ = 0;
 
   volatile bool recv = false;
 
-  uint32_t gas_concentration_;
-  int16_t temperature_;
-  uint16_t relative_humidity_;
+  uint32_t gas_concentration_ = 0;
+  int16_t temperature_ = 0;
+  uint16_t relative_humidity_ = 0;
 };
 
 } // namespace spec
