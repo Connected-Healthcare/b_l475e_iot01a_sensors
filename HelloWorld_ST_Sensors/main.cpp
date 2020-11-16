@@ -60,24 +60,15 @@ static VL53L0X range(&devI2c, &shutdown_pin, PC_7);
 
 #include "spec_co.hpp"
 
+static spec::CarbonMonoxide co(PA_0, PA_1);
+
 int main() {
-  // TODO, Uncomment this out later
-  // spec::CarbonMonoxide co(PA_0, PA_1);
-  // co.initialize();
-
-  // while(1) {
-  //   printf("d: %lu %d %d\r\n", co.get_gas_concentration(),
-  //   co.get_temperature(), co.get_relative_humidity());
-  //   ThisThread::sleep_for(1000);
-  // }
-
-  // return 0;
-
   hum_temp.init(NULL);
   press_temp.init(NULL);
   magnetometer.init(NULL);
   acc_gyro.init(NULL);
   range.init_sensor(VL53L0X_DEFAULT_ADDRESS);
+  co.initialize();
 
   hum_temp.enable();
   press_temp.enable();
@@ -140,6 +131,11 @@ int main() {
     } else {
       printf("VL53L0X [mm]:                --\r\n");
     }
+
+    printf("SPEC CO SENSOR: Gas Concentration (ppm) %lu Temperature (C) %d "
+           "(Relative Humidity) %d\r\n",
+           co.get_gas_concentration(), co.get_temperature(),
+           co.get_relative_humidity());
     printf("-----\r\n");
 
     ThisThread::sleep_for(500);
