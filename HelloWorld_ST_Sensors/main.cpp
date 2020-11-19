@@ -41,101 +41,48 @@
 /* Includes */
 #include "mbed.h"
 
-#include "HTS221Sensor.h"
-#include "LPS22HBSensor.h"
-#include "LSM6DSLSensor.h"
-
-#include "lis3mdl_class.h"
-
-#include "VL53L0X.h"
-
-static DevI2C devI2c(PB_11, PB_10);
-static LPS22HBSensor press_temp(&devI2c);
-static HTS221Sensor hum_temp(&devI2c);
-static LSM6DSLSensor acc_gyro(&devI2c, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, PD_11);
-static LIS3MDL magnetometer(&devI2c);
-
-static DigitalOut shutdown_pin(PC_6);
-static VL53L0X range(&devI2c, &shutdown_pin, PC_7);
-
+#include "internal_sensors.hpp"
+#include "sgp30.hpp"
 #include "spec_co.hpp"
 
 static spec::CarbonMonoxide co(PA_0, PA_1);
+static sensor::SGP30 sgp30(PB_9, PB_8);
 
 int main() {
-  hum_temp.init(NULL);
-  press_temp.init(NULL);
-  magnetometer.init(NULL);
-  acc_gyro.init(NULL);
-  range.init_sensor(VL53L0X_DEFAULT_ADDRESS);
+  internal_sensor::init_sensor();
   co.initialize();
-
-  hum_temp.enable();
-  press_temp.enable();
-  acc_gyro.enable_x();
-  acc_gyro.enable_g();
+  sgp30.start();
 
   printf("\r\n--- Starting new run ---\r\n\r\n");
-
-  uint8_t id;
-  hum_temp.read_id(&id);
-  printf("HTS221  humidity & temperature    = 0x%X\r\n", id);
-
-  press_temp.read_id(&id);
-  printf("LPS22HB pressure & temperature    = 0x%X\r\n", id);
-
-  magnetometer.read_id(&id);
-  printf("LIS3MDL magnetometer              = 0x%X\r\n", id);
-
-  acc_gyro.read_id(&id);
-  printf("LSM6DSL accelerometer & gyroscope = 0x%X\r\n", id);
-
-  // range.read_id(&id);
-  // printf("VL53L0X Time of Flight and Gesture detection sensor = 0x%X\r\n",
-  // id);
   ThisThread::sleep_for(1000);
 
-  printf("--- Reading sensor values ---\n\r");
-  ;
-
-  float hum_temp__temperature, hum_temp__humidity;
-  float press_temp__temperature, press_temp__pressure;
-  int32_t axes[3];
   while (1) {
-    hum_temp.get_temperature(&hum_temp__temperature);
-    hum_temp.get_humidity(&hum_temp__humidity);
-    printf("HTS221: [temp] %.2f C, [hum] %.2f\r\n", hum_temp__temperature,
-           hum_temp__humidity);
-
-    press_temp.get_temperature(&press_temp__temperature);
-    press_temp.get_pressure(&press_temp__pressure);
+    // Internal Sensor data
+    internal_sensor::update_sensor_data();
+    const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
+    printf("HTS221: [temp] %.2f C, [hum] %.2f\r\n", data.hts221_temperature,
+           data.hts221_humidity);
     printf("LPS22HB: [temp] %.2f C, [press] %.2f mbar\r\n",
-           press_temp__temperature, press_temp__pressure);
+           data.lps22hb_temperature, data.lps22hb_pressure);
+    printf("LIS3MDL [mag/mgauss]:    %6ld, %6ld, %6ld\r\n",
+           data.magnetometer_axes[0], data.magnetometer_axes[1],
+           data.magnetometer_axes[2]);
+    printf("LSM6DSL [acc/mg]:        %6ld, %6ld, %6ld\r\n",
+           data.acceleration_axes[0], data.acceleration_axes[1],
+           data.acceleration_axes[2]);
+    printf("LSM6DSL [gyro/mdps]:     %6ld, %6ld, %6ld\r\n",
+           data.gyroscope_axes[0], data.gyroscope_axes[1],
+           data.gyroscope_axes[2]);
+    printf("VL53L0X [mm]:            %6ld\r\n", data.distance);
 
-    magnetometer.get_m_axes(axes);
-    printf("LIS3MDL [mag/mgauss]:    %6ld, %6ld, %6ld\r\n", axes[0], axes[1],
-           axes[2]);
-
-    acc_gyro.get_x_axes(axes);
-    printf("LSM6DSL [acc/mg]:        %6ld, %6ld, %6ld\r\n", axes[0], axes[1],
-           axes[2]);
-
-    acc_gyro.get_g_axes(axes);
-    printf("LSM6DSL [gyro/mdps]:     %6ld, %6ld, %6ld\r\n", axes[0], axes[1],
-           axes[2]);
-
-    uint32_t distance;
-    int status = range.get_distance(&distance);
-    if (status == VL53L0X_ERROR_NONE) {
-      printf("VL53L0X [mm]:            %6ld\r\n", distance);
-    } else {
-      printf("VL53L0X [mm]:                --\r\n");
-    }
-
+    // CO Sensor
     printf("SPEC CO SENSOR: Gas Concentration (ppm) %lu Temperature (C) %d "
            "(Relative Humidity) %d\r\n",
            co.get_gas_concentration(), co.get_temperature(),
            co.get_relative_humidity());
+
+    // SGP30 Sensor
+    printf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(), sgp30.get_voc());
     printf("-----\r\n");
 
     ThisThread::sleep_for(500);
