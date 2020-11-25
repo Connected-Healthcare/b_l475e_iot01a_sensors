@@ -41,49 +41,63 @@
 /* Includes */
 #include "mbed.h"
 
+#include "i2c_slave.hpp"
+
 #include "internal_sensors.hpp"
 #include "sgp30.hpp"
 #include "spec_co.hpp"
 
+#define DEBUG_PRINT 1
+
+#if DEBUG_PRINT
+#define debugPrintf(x, ...) printf(x, __VA_ARGS__)
+#else
+#define debugPrintf(x, ...)
+#endif
+
 static spec::CarbonMonoxide co(PA_0, PA_1);
 static sensor::SGP30 sgp30(PB_9, PB_8);
+static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);
 
 int main() {
   internal_sensor::init_sensor();
   co.initialize();
   sgp30.start();
+  slave.init_thread();
 
-  printf("\r\n--- Starting new run ---\r\n\r\n");
+  debugPrintf("%s", "\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
 
   while (1) {
     // Internal Sensor data
     internal_sensor::update_sensor_data();
     const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-    printf("HTS221: [temp] %.2f C, [hum] %.2f\r\n", data.hts221_temperature,
-           data.hts221_humidity);
-    printf("LPS22HB: [temp] %.2f C, [press] %.2f mbar\r\n",
-           data.lps22hb_temperature, data.lps22hb_pressure);
-    printf("LIS3MDL [mag/mgauss]:    %6ld, %6ld, %6ld\r\n",
-           data.magnetometer_axes[0], data.magnetometer_axes[1],
-           data.magnetometer_axes[2]);
-    printf("LSM6DSL [acc/mg]:        %6ld, %6ld, %6ld\r\n",
-           data.acceleration_axes[0], data.acceleration_axes[1],
-           data.acceleration_axes[2]);
-    printf("LSM6DSL [gyro/mdps]:     %6ld, %6ld, %6ld\r\n",
-           data.gyroscope_axes[0], data.gyroscope_axes[1],
-           data.gyroscope_axes[2]);
-    printf("VL53L0X [mm]:            %6ld\r\n", data.distance);
+    debugPrintf("HTS221: [temp] %.2f C, [hum] %.2f\r\n",
+                data.hts221_temperature, data.hts221_humidity);
+    debugPrintf("LPS22HB: [temp] %.2f C, [press] %.2f mbar\r\n",
+                data.lps22hb_temperature, data.lps22hb_pressure);
+    debugPrintf("LIS3MDL [mag/mgauss]:    %6ld, %6ld, %6ld\r\n",
+                data.magnetometer_axes[0], data.magnetometer_axes[1],
+                data.magnetometer_axes[2]);
+    debugPrintf("LSM6DSL [acc/mg]:        %6ld, %6ld, %6ld\r\n",
+                data.acceleration_axes[0], data.acceleration_axes[1],
+                data.acceleration_axes[2]);
+    debugPrintf("LSM6DSL [gyro/mdps]:     %6ld, %6ld, %6ld\r\n",
+                data.gyroscope_axes[0], data.gyroscope_axes[1],
+                data.gyroscope_axes[2]);
+    debugPrintf("VL53L0X [mm]:            %6ld\r\n", data.distance);
 
     // CO Sensor
-    printf("SPEC CO SENSOR: Gas Concentration (ppm) %lu Temperature (C) %d "
-           "(Relative Humidity) %d\r\n",
-           co.get_gas_concentration(), co.get_temperature(),
-           co.get_relative_humidity());
+    debugPrintf(
+        "SPEC CO SENSOR: Gas Concentration (ppm) %lu Temperature (C) %d "
+        "(Relative Humidity) %d\r\n",
+        co.get_gas_concentration(), co.get_temperature(),
+        co.get_relative_humidity());
 
     // SGP30 Sensor
-    printf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(), sgp30.get_voc());
-    printf("-----\r\n");
+    debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
+                sgp30.get_voc());
+    debugPrintf("%s", "-----\r\n");
 
     ThisThread::sleep_for(500);
   }
