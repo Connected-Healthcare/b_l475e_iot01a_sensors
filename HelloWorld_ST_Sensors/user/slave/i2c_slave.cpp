@@ -9,6 +9,11 @@ static void uint32_to_uint8_array(uint32_t data, uint8_t *arr) {
   arr[3] = (data >> (3 * 8)) & 0xFF;
 }
 
+static uint32_t convert_float_to_uint32_float_structure(float data) {
+  uint32_t rdata = *(uint32_t *)&data;
+  return rdata;
+}
+
 namespace i2c_slave {
 
 void SlaveCommunication::init_thread() {
@@ -140,37 +145,39 @@ void SlaveCommunication::send_sgp30_voc() {
   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
 }
 
-// TODO, Convert to float
 void SlaveCommunication::send_hts221_temperature() {
   uint8_t tx_data[ARR_SIZE] = {0};
   const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-  uint32_to_uint8_array(static_cast<uint32_t>(data.hts221_temperature),
-                        tx_data);
+  const uint32_t rdata =
+      convert_float_to_uint32_float_structure(data.hts221_temperature);
+  uint32_to_uint8_array(rdata, tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE);
 }
 
-// TODO, Convert to float
 void SlaveCommunication::send_hts221_humidity() {
   uint8_t tx_data[ARR_SIZE] = {0};
   const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-  uint32_to_uint8_array(static_cast<uint32_t>(data.hts221_humidity), tx_data);
+  const uint32_t rdata =
+      convert_float_to_uint32_float_structure(data.hts221_humidity);
+  uint32_to_uint8_array(rdata, tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE);
 }
 
-// TODO, Convert to float
 void SlaveCommunication::send_lps22hb_temperature() {
   uint8_t tx_data[ARR_SIZE] = {0};
   const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-  uint32_to_uint8_array(static_cast<uint32_t>(data.lps22hb_temperature),
-                        tx_data);
+  const uint32_t rdata =
+      convert_float_to_uint32_float_structure(data.lps22hb_temperature);
+  uint32_to_uint8_array(rdata, tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE);
 }
 
-// TODO, Convert to float
 void SlaveCommunication::send_lps22hb_pressure() {
   uint8_t tx_data[ARR_SIZE] = {0};
   const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-  uint32_to_uint8_array(static_cast<uint32_t>(data.lps22hb_pressure), tx_data);
+  const uint32_t rdata =
+      convert_float_to_uint32_float_structure(data.lps22hb_pressure);
+  uint32_to_uint8_array(rdata, tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE);
 }
 
