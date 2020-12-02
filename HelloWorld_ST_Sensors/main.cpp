@@ -47,12 +47,15 @@
 #include "sgp30.hpp"
 #include "spec_co.hpp"
 
+// Sending data over TCP or UDP
+#include "internet.h"
+
 #define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
-#define debugPrintf(x, ...) printf(x, __VA_ARGS__)
+#define debugPrintf(...) printf(__VA_ARGS__)
 #else
-#define debugPrintf(x, ...)
+#define debugPrintf(...)
 #endif
 
 static spec::CarbonMonoxide co(PA_0, PA_1);
@@ -65,7 +68,21 @@ int main() {
   sgp30.start();
   slave.init_thread();
 
-  debugPrintf("%s", "\r\n--- Starting new run ---\r\n\r\n");
+  // NOTE, Always init this after the sensors have been initialized
+  bool connected_to_internet = internet::connect_as_tcp();
+  // Add all your sensor classes here
+  internet::sensors_t sensors;
+  sensors.sgp30 = &sgp30;
+  sensors.co = &co;
+
+  // Start the thread
+  Thread internet_thread;
+  if (connected_to_internet) {
+    printf("Started Internet Thread\r\n");
+    internet_thread.start(callback(internet::send_sensor_data, &sensors));
+  }
+
+  debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
 
   while (1) {
@@ -97,7 +114,7 @@ int main() {
     // SGP30 Sensor
     debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
                 sgp30.get_voc());
-    debugPrintf("%s", "-----\r\n");
+    debugPrintf("-----\r\n");
 
     ThisThread::sleep_for(500);
   }
