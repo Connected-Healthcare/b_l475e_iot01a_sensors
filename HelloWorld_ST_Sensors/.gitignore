@@ -13,9 +13,11 @@ LPS22HB
 LSM6DSL
 LSM303AGR
 VL53L0X
+DISCO_L475VG_IOT01A_wifi
 mbed
 mbed-os
 
 # Files
 *.pyc
 *.VC.DB*
+access_point.h
