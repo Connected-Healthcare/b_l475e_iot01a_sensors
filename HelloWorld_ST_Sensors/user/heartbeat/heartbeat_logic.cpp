@@ -15,7 +15,6 @@ namespace hb_sensor
   {
     heartbeat__initialize_application_mode();
     uint8_t responseByte = readByte_1(READ_DEVICE_MODE, 0x00);
-    i2c_hb.frequency(400000);
     return responseByte;
   }
 
@@ -447,5 +446,40 @@ namespace hb_sensor
       }
     }
     return statusByte;
+  }
+
+  void hb_sensor_class::start(void)
+  {
+    uint8_t response_code;
+    response_code = begin();
+    if (!response_code)
+    {
+      printf("Heartbeat sensor started\r\n");
+      response_code = configBpm(0x01);
+      if (!response_code)
+      {
+        printf("Heartbeat sensor successfully configured\r\n");
+        ThisThread::sleep_for(DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS);
+        thread_.start(callback(this, &hb_sensor_class::thread_task));
+      }
+      else
+      {
+        printf("Could not configure the Heartbeat sensor. response_code = %d\r\n", response_code);
+      }
+    }
+    else
+    {
+      printf("Could not communicate with the sensor\r\n");
+    }
+  }
+
+  void hb_sensor_class::thread_task(void)
+  {
+    while (1)
+    {
+      body = readBpm();
+
+      ThisThread::sleep_for(HEARTBEAT_TASK_DELAY_MILLISECONDS); // 250 millseconds
+    }
   }
 }

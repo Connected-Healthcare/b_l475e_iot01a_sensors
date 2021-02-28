@@ -66,7 +66,6 @@ static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30); // I2C3
 static bt::hc05 btserial(PA_2, PA_3, 9600);                        // UART2
 static hb_sensor::hb_sensor_class hb_obj(PB_9, PB_8);
 
-static struct hb_sensor::bioData body;
 volatile bool is_recv = false;
 char btserial_data[200];
 
@@ -83,34 +82,13 @@ void btserial_process(const char *line)
 
 int main()
 {
-  uint8_t response_code;
-
   internal_sensor::init_sensor();
   co.initialize();
   sgp30.start();
   slave.init_thread();
   btserial.register_process_func(btserial_process);
-  response_code = hb_obj.begin();
-  if (!response_code)
-  {
-    printf("Heartbeat sensor started\r\n");
-  }
-  else
-  {
-    printf("Could not communicate with the sensor\r\n");
-  }
+  hb_obj.start();
 
-  response_code = hb_obj.configBpm(0x01);
-  if (!response_code)
-  {
-    printf("Heartbeat sensor successfully configured\r\n");
-  }
-  else
-  {
-    printf("Could not configure the Heartbeat sensor. response_code = %d\r\n", response_code);
-  }
-
-  ThisThread::sleep_for(DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS);
   // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();
   // Add all your sensor classes here
@@ -167,16 +145,14 @@ int main()
     // SGP30 Sensor
     debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
                 sgp30.get_voc());
-    debugPrintf("-----\r\n");
-    body = hb_obj.readBpm();
+    // Heartbeat Sensor
+    debugPrintf("HEARTBEAT SENSOR:\r\n");
+    debugPrintf("Heartrate: %d\r\n", hb_obj.body.heartRate);
+    debugPrintf("Confidence: %d\r\n", hb_obj.body.confidence);
+    debugPrintf("Oxygen: %d\r\n", hb_obj.body.oxygen);
+    debugPrintf("Status: %d\r\n", hb_obj.body.status);
 
-    debugPrintf("Heartrate: %d\r\n", body.heartRate);
-    debugPrintf("Confidence: %d\r\n", body.confidence);
-    debugPrintf("Oxygen: %d\r\n", body.oxygen);
-    debugPrintf("Status: %d\r\n", body.status);
-    ThisThread::sleep_for(HEARTBEAT_TASK_DELAY_MILLISECONDS); // 250 millseconds
-    // BT Write sensor data
-    // NOTE, This data is meant to be synced with the user
+    debugPrintf("-----\r\n");
     sprintf(buffer,
             "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
             "%ld,%ld,%d,%d\r\n",
@@ -186,7 +162,7 @@ int main()
             data.magnetometer_axes[2], data.acceleration_axes[0],
             data.acceleration_axes[1], data.acceleration_axes[2],
             data.gyroscope_axes[0], data.gyroscope_axes[1],
-            data.gyroscope_axes[2], data.distance, body.heartRate, body.oxygen);
+            data.gyroscope_axes[2], data.distance, hb_obj.body.heartRate, hb_obj.body.oxygen);
     btserial.write(buffer);
     ThisThread::sleep_for(500);
   }

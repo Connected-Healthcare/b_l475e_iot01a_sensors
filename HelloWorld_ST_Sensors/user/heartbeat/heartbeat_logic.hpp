@@ -154,6 +154,8 @@ namespace hb_sensor
     {
     }
 
+    struct bioData body;
+
     uint8_t begin(void);
 
     uint8_t configBpm(uint8_t);
@@ -190,8 +192,14 @@ namespace hb_sensor
 
     void readSensorVersion();
 
+    void start(void);
+
+    void thread_task(void);
+
   private:
     I2C i2c_hb;
+
+    Thread thread_;
 
     uint8_t _address;
 
