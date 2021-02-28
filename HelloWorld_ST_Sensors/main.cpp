@@ -40,10 +40,12 @@
 
 /* Includes */
 #include "i2c_slave.hpp"
-#include "internal_sensors.hpp"
 #include "mbed.h"
+
 #include "sgp30.hpp"
 #include "spec_co.hpp"
+#include "internal_sensors.hpp"
+#include "heartbeat_logic.hpp"
 
 // Sending data over BT
 #include "hc05.hpp"
@@ -51,19 +53,20 @@
 // Sending data over TCP or UDP
 #include "internet.h"
 
-#define DEBUG_PRINT 0
+#define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
 #define debugPrintf(...) printf(__VA_ARGS__)
 #else
 #define debugPrintf(...)
 #endif
+static spec::CarbonMonoxide co(PA_0, PA_1);                        // UART4
+static sensor::SGP30 sgp30(PB_9, PB_8);                            // I2C1
+static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30); // I2C3
+static bt::hc05 btserial(PA_2, PA_3, 9600);                        // UART2
+static hb_sensor::hb_sensor_class hb_obj(PB_9, PB_8);
 
-static spec::CarbonMonoxide co(PA_0, PA_1);                         // UART4
-static sensor::SGP30 sgp30(PB_9, PB_8);                             // I2C1
-static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);  // I2C3
-static bt::hc05 btserial(PA_2, PA_3, 9600);                         // UART2
-
+static struct hb_sensor::bioData body;
 volatile bool is_recv = false;
 char btserial_data[200];
 
@@ -71,19 +74,43 @@ char btserial_data[200];
 // ! DO NOT RUN ANY BLOCKING FUNCTIONS HERE
 // NOTE, This process cb has been exposed since we might need to perform some
 // tasks depending on what we recv
-void btserial_process(const char *line) {
+void btserial_process(const char *line)
+{
   memset(btserial_data, 0, sizeof(btserial_data));
   strcpy(btserial_data, line);
   is_recv = true;
 }
 
-int main() {
+int main()
+{
+  uint8_t response_code;
+
   internal_sensor::init_sensor();
   co.initialize();
   sgp30.start();
   slave.init_thread();
   btserial.register_process_func(btserial_process);
+  response_code = hb_obj.begin();
+  if (!response_code)
+  {
+    printf("Heartbeat sensor started\r\n");
+  }
+  else
+  {
+    printf("Could not communicate with the sensor\r\n");
+  }
 
+  response_code = hb_obj.configBpm(0x01);
+  if (!response_code)
+  {
+    printf("Heartbeat sensor successfully configured\r\n");
+  }
+  else
+  {
+    printf("Could not configure the Heartbeat sensor. response_code = %d\r\n", response_code);
+  }
+
+  ThisThread::sleep_for(DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS);
   // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();
   // Add all your sensor classes here
@@ -93,19 +120,21 @@ int main() {
 
   // Start the thread
   Thread internet_thread;
-  if (connected_to_internet) {
+  if (connected_to_internet)
+  {
     printf("Started Internet Thread\r\n");
     internet_thread.start(callback(internet::send_sensor_data, &sensors));
   }
-
   debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
   char buffer[200] = {0};
-  while (1) {
+  while (1)
+  {
     // BTSerial Recv
     // ! NOTE, We can control the microcontroller depending on what data we recv
     // here
-    if (is_recv) {
+    if (is_recv)
+    {
       is_recv = false;
       printf("btrecv: %s\r\n", btserial_data);
     }
@@ -139,21 +168,26 @@ int main() {
     debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
                 sgp30.get_voc());
     debugPrintf("-----\r\n");
+    body = hb_obj.readBpm();
 
+    debugPrintf("Heartrate: %d\r\n", body.heartRate);
+    debugPrintf("Confidence: %d\r\n", body.confidence);
+    debugPrintf("Oxygen: %d\r\n", body.oxygen);
+    debugPrintf("Status: %d\r\n", body.status);
+    ThisThread::sleep_for(HEARTBEAT_TASK_DELAY_MILLISECONDS); // 250 millseconds
     // BT Write sensor data
     // NOTE, This data is meant to be synced with the user
     sprintf(buffer,
             "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
-            "%ld,%ld\r\n",
+            "%ld,%ld,%d,%d\r\n",
             data.hts221_temperature, data.hts221_humidity,
             data.lps22hb_temperature, data.lps22hb_pressure,
             data.magnetometer_axes[0], data.magnetometer_axes[1],
             data.magnetometer_axes[2], data.acceleration_axes[0],
             data.acceleration_axes[1], data.acceleration_axes[2],
             data.gyroscope_axes[0], data.gyroscope_axes[1],
-            data.gyroscope_axes[2], data.distance);
+            data.gyroscope_axes[2], data.distance, body.heartRate, body.oxygen);
     btserial.write(buffer);
-
     ThisThread::sleep_for(500);
   }
 }
