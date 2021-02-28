@@ -87,7 +87,7 @@ int main()
   sgp30.start();
   slave.init_thread();
   btserial.register_process_func(btserial_process);
-  hb_obj.start();
+  hb_obj.hb_start();
 
   // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();

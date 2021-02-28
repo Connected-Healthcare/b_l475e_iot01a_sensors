@@ -448,7 +448,7 @@ namespace hb_sensor
     return statusByte;
   }
 
-  void hb_sensor_class::start(void)
+  void hb_sensor_class::hb_start(void)
   {
     uint8_t response_code;
     response_code = begin();
@@ -460,7 +460,7 @@ namespace hb_sensor
       {
         printf("Heartbeat sensor successfully configured\r\n");
         ThisThread::sleep_for(DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS);
-        thread_.start(callback(this, &hb_sensor_class::thread_task));
+        thread_.start(callback(this, &hb_sensor_class::hb_thread_task));
       }
       else
       {
@@ -473,7 +473,7 @@ namespace hb_sensor
     }
   }
 
-  void hb_sensor_class::thread_task(void)
+  void hb_sensor_class::hb_thread_task(void)
   {
     while (1)
     {

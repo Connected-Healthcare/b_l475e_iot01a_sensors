@@ -192,9 +192,9 @@ namespace hb_sensor
 
     void readSensorVersion();
 
-    void start(void);
+    void hb_start(void);
 
-    void thread_task(void);
+    void hb_thread_task(void);
 
   private:
     I2C i2c_hb;
