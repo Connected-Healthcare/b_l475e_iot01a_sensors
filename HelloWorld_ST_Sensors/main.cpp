@@ -46,11 +46,12 @@
 #include "internal_sensors.hpp"
 #include "sgp30.hpp"
 #include "spec_co.hpp"
+#include "gps.hpp"
 
 // Sending data over TCP or UDP
 #include "internet.h"
 
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
 
 #if DEBUG_PRINT
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -58,15 +59,33 @@
 #define debugPrintf(...)
 #endif
 
+#define GPS_COORDINATES_BUF_LEN 128
+
 static spec::CarbonMonoxide co(PA_0, PA_1);
 static sensor::SGP30 sgp30(PB_9, PB_8);
 static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);
+static gps_ns::gps_c gps_obj(PC_4, PC_5, 9600); // UART3
 
-int main() {
+volatile bool is_gps_recv = false;
+
+char gps_uart_data[GPS_COORDINATES_BUF_LEN];
+
+void gps__get_line(const char *line)
+{
+  memset(gps_uart_data, 0, sizeof(gps_uart_data));
+  strcpy(gps_uart_data, line);
+  is_gps_recv = true;
+}
+
+int main()
+{
+  // char gps__coordinates_buff[GPS_COORDINATES_BUF_LEN] = {0};
+
   internal_sensor::init_sensor();
   co.initialize();
   sgp30.start();
   slave.init_thread();
+  gps_obj.register_func(gps__get_line);
 
   // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();
@@ -77,7 +96,8 @@ int main() {
 
   // Start the thread
   Thread internet_thread;
-  if (connected_to_internet) {
+  if (connected_to_internet)
+  {
     printf("Started Internet Thread\r\n");
     internet_thread.start(callback(internet::send_sensor_data, &sensors));
   }
@@ -85,7 +105,24 @@ int main() {
   debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
 
-  while (1) {
+  while (1)
+  {
+
+    // if (true == is_gps_recv)
+    // {
+    //   debugPrintf("%s\r\n", gps_uart_data);
+    // }
+
+    debugPrintf("%s\r\n", gps_uart_data);
+    memset(gps_uart_data, 0, sizeof(gps_uart_data));
+    // If the GPS stops buffering data, then copy an error message so that BT module in phone can handle accordingly
+    strcpy(gps_uart_data, "NA");
+
+    // is_gps_recv = false;
+    // gps_obj.gps_coordinates_data = gps_obj.get_gps_coordinates();
+    // sprintf(gps__coordinates_buff, "%s %s, %s %s", gps_obj.gps_coordinates_data.longitude, gps_obj.gps_coordinates_data.long_dir, gps_obj.gps_coordinates_data.latitude, gps_obj.gps_coordinates_data.lat_dir);
+    // debugPrintf("GPS Long and Lat Received from GPS hardware: %s\r\n", gps__coordinates_buff);
+
     // Internal Sensor data
     internal_sensor::update_sensor_data();
     const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
