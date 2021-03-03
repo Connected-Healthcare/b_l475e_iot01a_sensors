@@ -39,18 +39,19 @@
  */
 
 /* Includes */
-#include "mbed.h"
-
 #include "i2c_slave.hpp"
-
 #include "internal_sensors.hpp"
+#include "mbed.h"
 #include "sgp30.hpp"
 #include "spec_co.hpp"
+
+// Sending data over BT
+#include "hc05.hpp"
 
 // Sending data over TCP or UDP
 #include "internet.h"
 
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
 
 #if DEBUG_PRINT
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -58,15 +59,30 @@
 #define debugPrintf(...)
 #endif
 
-static spec::CarbonMonoxide co(PA_0, PA_1);
-static sensor::SGP30 sgp30(PB_9, PB_8);
-static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);
+static spec::CarbonMonoxide co(PA_0, PA_1);                         // UART4
+static sensor::SGP30 sgp30(PB_9, PB_8);                             // I2C1
+static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);  // I2C3
+static bt::hc05 btserial(PA_2, PA_3, 9600);                         // UART2
+
+volatile bool is_recv = false;
+char btserial_data[200];
+
+// NOTE, This runs inside a interrupt
+// ! DO NOT RUN ANY BLOCKING FUNCTIONS HERE
+// NOTE, This process cb has been exposed since we might need to perform some
+// tasks depending on what we recv
+void btserial_process(const char *line) {
+  memset(btserial_data, 0, sizeof(btserial_data));
+  strcpy(btserial_data, line);
+  is_recv = true;
+}
 
 int main() {
   internal_sensor::init_sensor();
   co.initialize();
   sgp30.start();
   slave.init_thread();
+  btserial.register_process_func(btserial_process);
 
   // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();
@@ -84,8 +100,16 @@ int main() {
 
   debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
-
+  char buffer[200] = {0};
   while (1) {
+    // BTSerial Recv
+    // ! NOTE, We can control the microcontroller depending on what data we recv
+    // here
+    if (is_recv) {
+      is_recv = false;
+      printf("btrecv: %s\r\n", btserial_data);
+    }
+
     // Internal Sensor data
     internal_sensor::update_sensor_data();
     const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
@@ -115,6 +139,20 @@ int main() {
     debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
                 sgp30.get_voc());
     debugPrintf("-----\r\n");
+
+    // BT Write sensor data
+    // NOTE, This data is meant to be synced with the user
+    sprintf(buffer,
+            "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
+            "%ld,%ld\r\n",
+            data.hts221_temperature, data.hts221_humidity,
+            data.lps22hb_temperature, data.lps22hb_pressure,
+            data.magnetometer_axes[0], data.magnetometer_axes[1],
+            data.magnetometer_axes[2], data.acceleration_axes[0],
+            data.acceleration_axes[1], data.acceleration_axes[2],
+            data.gyroscope_axes[0], data.gyroscope_axes[1],
+            data.gyroscope_axes[2], data.distance);
+    btserial.write(buffer);
 
     ThisThread::sleep_for(500);
   }
