@@ -1,22 +1,22 @@
 #include "gps.hpp"
 
-namespace gps_ns
+namespace gps
 {
-    gps_c::gps_coordinates_s gps_c::get_gps_coordinates(void)
+    gps_coordinates_s adafruit_PA6H::get_gps_coordinates(void)
     {
         return gps_coordinates_data;
     }
 
-    void gps_c::gps_struct_init(void)
+    void adafruit_PA6H::gps_struct_init(void)
     {
         strcpy(gps_coordinates_data.lat_dir, "NA");
-        strcpy(gps_coordinates_data.latitude, "0.0");
+        gps_coordinates_data.latitude = 0.0;
         strcpy(gps_coordinates_data.lat_dir, "NA");
-        strcpy(gps_coordinates_data.longitude, "0.0");
+        gps_coordinates_data.longitude = 0.0;
         strcpy(gps_coordinates_data.validity, "NA");
     }
 
-    uint8_t gps_c::check_gprmc_gpgga_line(char *line_buff)
+    uint8_t adafruit_PA6H::check_gprmc_line(char *line_buff)
     {
         uint16_t nmea_string_token_index = 0;
         char *temp_token = NULL;
@@ -29,12 +29,6 @@ namespace gps_ns
             gps_nmea_type = GPS_GPRMC;
         }
 
-        // Not processing GPGGA since it does not have an Active/Valid field to determine the validity of NMEA string
-        // else if (strcmp(temp_token, "$GPGGA") == 0)
-        // {
-        //     gps_nmea_type = GPS_GPGGA;
-        // }
-
         if (gps_nmea_type != GPS_INVALID_NMEA)
         {
             while (temp_token != NULL)
@@ -43,42 +37,25 @@ namespace gps_ns
                 nmea_string_token_index++;
                 switch (gps_nmea_type)
                 {
-                case GPS_GPGGA:
-                    switch (nmea_string_token_index)
-                    {
-                    case GPGGA_LATITUDE_INDEX:
-                        strcpy(gps_coordinates_data.latitude, temp_token);
-                        break;
-                    case GPGGA_LATITUDE_DIR_INDEX:
-                        strcpy(gps_coordinates_data.lat_dir, temp_token);
-                        break;
-                    case GPGGA_LONGITUDE_INDEX:
-                        strcpy(gps_coordinates_data.longitude, temp_token);
-                        break;
-                    case GPGGA_LONGITUDE_DIR_INDEX:
-                        strcpy(gps_coordinates_data.long_dir, temp_token);
-                        break;
-                    }
-                    break;
                 case GPS_GPRMC:
                     switch (nmea_string_token_index)
                     {
                     case GPRMC_VALIDITY_INDEX:
                         strcpy(gps_coordinates_data.validity, temp_token);
-                        // Consider NMEA strings that are GPRMC and Active Navigation Receiver Warning
+                        // Only use NMEA strings that are GPRMC and have Navigation Receiver Warning set to Active (A)
                         if (strcmp(temp_token, "A") != 0)
                         {
                             gps_nmea_type = GPS_INVALID_NMEA;
                         }
                         break;
                     case GPRMC_LATITUDE_INDEX:
-                        strcpy(gps_coordinates_data.latitude, temp_token);
+                        gps_coordinates_data.latitude = atof(temp_token);
                         break;
                     case GPRMC_LATITUDE_DIR_INDEX:
                         strcpy(gps_coordinates_data.lat_dir, temp_token);
                         break;
                     case GPRMC_LONGITUDE_INDEX:
-                        strcpy(gps_coordinates_data.longitude, temp_token);
+                        gps_coordinates_data.longitude = atof(temp_token);
                         break;
                     case GPRMC_LONGITUDE_DIR_INDEX:
                         strcpy(gps_coordinates_data.long_dir, temp_token);
@@ -88,10 +65,19 @@ namespace gps_ns
                 }
             }
         }
+
+        if (strcmp(gps_coordinates_data.lat_dir, "S") == 0)
+        {
+            gps_coordinates_data.latitude = ((double)(-1.0) * gps_coordinates_data.latitude);
+        }
+        if (strcmp(gps_coordinates_data.long_dir, "W") == 0)
+        {
+            gps_coordinates_data.longitude = ((double)(-1.0) * gps_coordinates_data.longitude);
+        }
         return gps_nmea_type;
     }
 
-    uint8_t gps_c::extract_gpgga_or_gprmc_line(char *gps_buff)
+    uint8_t adafruit_PA6H::extract_gprmc_line(char *gps_buff)
     {
         uint8_t gps_nmea_type = GPS_INVALID_NMEA;
         char valid_gps_string[100] = {0};
@@ -108,7 +94,7 @@ namespace gps_ns
                 }
                 if (i < UART_BUF_LEN)
                 {
-                    gps_nmea_type = check_gprmc_gpgga_line(valid_gps_string);
+                    gps_nmea_type = check_gprmc_line(valid_gps_string);
                     if (gps_nmea_type != GPS_INVALID_NMEA)
                     {
                         break;
@@ -121,12 +107,12 @@ namespace gps_ns
         return gps_nmea_type;
     }
 
-    void gps_c::register_func(void (*external_fn)(const char *newline))
+    void adafruit_PA6H::register_func(void (*external_fn)(void))
     {
         gps_process_fn_ptr = external_fn;
     }
 
-    void gps_c::gps_interrupt_cb()
+    void adafruit_PA6H::gps_interrupt_cb()
     {
         int data = gps_uart.getc();
         curr_line_buffer[index] = data;
@@ -134,18 +120,16 @@ namespace gps_ns
         {
             index++;
         }
-        if (index == UART_BUF_LEN)
+
+        if (data == '\n')
         {
-            uint8_t gps_nmea_type = extract_gpgga_or_gprmc_line(curr_line_buffer);
+            uint8_t gps_nmea_type = extract_gprmc_line(curr_line_buffer);
             if ((GPS_INVALID_NMEA != gps_nmea_type) && (gps_process_fn_ptr != NULL))
             {
-                char buffer_coordinate[128] = {0};
-                sprintf(buffer_coordinate, "Latitude: %s %s; Longitude: %s %s", gps_coordinates_data.latitude, gps_coordinates_data.lat_dir, gps_coordinates_data.longitude, gps_coordinates_data.long_dir);
-                gps_process_fn_ptr(buffer_coordinate);
+                gps_process_fn_ptr();
             }
             memset(curr_line_buffer, 0, UART_BUF_LEN);
             index = 0;
-            // memset(&gps_coordinates_data, 0, sizeof(gps_coordinates_s));
             gps_struct_init();
         }
     }
