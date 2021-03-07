@@ -52,7 +52,7 @@
 // Sending data over TCP or UDP
 #include "internet.h"
 
-#define DEBUG_PRINT 0
+#define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -60,11 +60,11 @@
 #define debugPrintf(...)
 #endif
 
-static spec::CarbonMonoxide co(PA_0, PA_1);
-static sensor::SGP30 sgp30(PB_9, PB_8);
-static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30);
-static bt::hc05 btserial(PA_2, PA_3, 9600);          // UART2
-static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600); // UART3
+static spec::CarbonMonoxide co(PA_0, PA_1);                        // UART4
+static sensor::SGP30 sgp30(PB_9, PB_8);                            // I2C1
+static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30); // I2C3
+static bt::hc05 btserial(PA_2, PA_3, 9600);                        // UART2
+static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600);               // UART3
 
 volatile bool is_recv = false;
 char btserial_data[200];
@@ -163,6 +163,8 @@ int main()
       debugPrintf("Lat: %lf | Long: %lf\r\n", gps_coordinates_data.latitude, gps_coordinates_data.longitude);
       is_gps_recv = false;
     }
+    gps_coordinates_data.latitude = 0.0;
+    gps_coordinates_data.longitude = 0.0;
 
     debugPrintf("-----\r\n");
 
