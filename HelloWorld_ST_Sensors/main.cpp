@@ -45,6 +45,7 @@
 #include "sgp30.hpp"
 #include "spec_co.hpp"
 #include "gps.hpp"
+#include "heartbeat_logic.hpp"
 
 // Sending data over BT
 #include "hc05.hpp"
@@ -62,9 +63,23 @@
 
 static spec::CarbonMonoxide co(PA_0, PA_1);                        // UART4
 static sensor::SGP30 sgp30(PB_9, PB_8);                            // I2C1
-static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, sgp30); // I2C3
+static i2c_slave::SlaveCommunication slave(PB_9, PB_8, co, sgp30); // I2C1
 static bt::hc05 btserial(PA_2, PA_3, 9600);                        // UART2
+static hb_sensor::hb_sensor_class hb_obj(PC_1, PC_0);              // I2C3
 static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600);               // UART3
+// I2C1 does not work
+
+/* 
+We have discarded SGP30 - code cleanup is pending
+Step 1:
+1. Check internal sensors, GPS (3.3v) and HB (I2C3) to damaged board - Works
+
+Step 2:
+1. Check internal sensors, GPS (3.3v) and HB (I2C3) and CO to damaged board - Not yet tried
+
+Step 3:
+1. Check internal sensors, GPS (3.3v) and HB (I2C3), CO, to small TI board via "SAME I2C3 (multiplexing)" using damaged board - Not yet tried
+*/
 
 volatile bool is_recv = false;
 char btserial_data[200];
@@ -98,22 +113,22 @@ int main()
   slave.init_thread();
   btserial.register_process_func(btserial_process);
   gps_obj.register_func(gps_get_line);
+  hb_obj.hb_start();
 
   // NOTE, Always init this after the sensors have been initialized
-  bool connected_to_internet = internet::connect_as_tcp();
+  // bool connected_to_internet = internet::connect_as_tcp();
   // Add all your sensor classes here
   internet::sensors_t sensors;
   sensors.sgp30 = &sgp30;
   sensors.co = &co;
 
   // Start the thread
-  Thread internet_thread;
-  if (connected_to_internet)
-  {
-    printf("Started Internet Thread\r\n");
-    internet_thread.start(callback(internet::send_sensor_data, &sensors));
-  }
-
+  // Thread internet_thread;
+  // if (connected_to_internet)
+  // {
+  //   printf("Started Internet Thread\r\n");
+  //   internet_thread.start(callback(internet::send_sensor_data, &sensors));
+  // }
   debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
   char buffer[200] = {0};
@@ -168,20 +183,24 @@ int main()
 
     debugPrintf("-----\r\n");
 
+    debugPrintf("HEARTBEAT SENSOR:\r\n");
+    debugPrintf("Heartrate: %d\r\n", hb_obj.body.heartRate);
+    debugPrintf("Confidence: %d\r\n", hb_obj.body.confidence);
+    debugPrintf("Oxygen: %d\r\n", hb_obj.body.oxygen);
+    debugPrintf("Status: %d\r\n", hb_obj.body.status);
     // BT Write sensor data
     // NOTE, This data is meant to be synced with the user
     sprintf(buffer,
             "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
-            "%ld,%ld\r\n",
+            "%ld,%ld,%d,%d\r\n",
             data.hts221_temperature, data.hts221_humidity,
             data.lps22hb_temperature, data.lps22hb_pressure,
             data.magnetometer_axes[0], data.magnetometer_axes[1],
             data.magnetometer_axes[2], data.acceleration_axes[0],
             data.acceleration_axes[1], data.acceleration_axes[2],
             data.gyroscope_axes[0], data.gyroscope_axes[1],
-            data.gyroscope_axes[2], data.distance);
+            data.gyroscope_axes[2], data.distance, hb_obj.body.heartRate, hb_obj.body.oxygen);
     btserial.write(buffer);
-
     ThisThread::sleep_for(500);
   }
 }
