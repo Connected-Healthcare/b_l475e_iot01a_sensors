@@ -68,11 +68,11 @@ namespace gps
 
         if (strcmp(gps_coordinates_data.lat_dir, "S") == 0)
         {
-            gps_coordinates_data.latitude = ((double)(-1.0) * gps_coordinates_data.latitude);
+            gps_coordinates_data.latitude = ((float)(-1.0) * gps_coordinates_data.latitude);
         }
         if (strcmp(gps_coordinates_data.long_dir, "W") == 0)
         {
-            gps_coordinates_data.longitude = ((double)(-1.0) * gps_coordinates_data.longitude);
+            gps_coordinates_data.longitude = ((float)(-1.0) * gps_coordinates_data.longitude);
         }
         return gps_nmea_type;
     }

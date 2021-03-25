@@ -8,9 +8,9 @@ namespace gps
 {
     typedef struct gps_data
     {
-        double latitude;
+        float latitude;
         char lat_dir[3];
-        double longitude;
+        float longitude;
         char long_dir[3];
         char validity[4];
     } gps_coordinates_s;

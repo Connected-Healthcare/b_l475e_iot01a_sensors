@@ -169,8 +169,8 @@ int main()
         co.get_relative_humidity());
 
     // SGP30 Sensor
-    debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
-                sgp30.get_voc());
+    // debugPrintf("SGP30: (co2) %d (voc) %d\r\n", sgp30.get_co2(),
+    //             sgp30.get_voc());
 
     // GPS
     if (is_gps_recv == true)
