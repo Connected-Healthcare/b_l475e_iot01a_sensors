@@ -31,6 +31,10 @@ namespace gps
         GPRMC_LONGITUDE_DIR_INDEX = 6,
     };
 
+    static gps_coordinates_s gps_coordinates_data;
+
+    gps_coordinates_s get_gps_coordinates(void);
+
     class adafruit_PA6H
     {
     private:
@@ -51,9 +55,6 @@ namespace gps
         {
             gps_uart.attach(callback(this, &adafruit_PA6H::gps_interrupt_cb));
         }
-
-        gps_coordinates_s gps_coordinates_data;
-        gps_coordinates_s get_gps_coordinates(void);
 
         void register_func(void (*external_fn)(void));
     };

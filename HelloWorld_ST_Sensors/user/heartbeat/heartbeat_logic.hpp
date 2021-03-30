@@ -147,14 +147,14 @@ namespace hb_sensor
     ENABLE_WHRM_ALGO = 0x02
   };
 
+  static struct bioData body;
+
   class hb_sensor_class
   {
   public:
     hb_sensor_class(PinName sda, PinName scl) : i2c_hb(sda, scl)
     {
     }
-
-    struct bioData body;
 
     uint8_t begin(void);
 
@@ -196,6 +196,8 @@ namespace hb_sensor
 
     void hb_thread_task(void);
 
+    // struct bioData &get_hb_data(void);
+
   private:
     I2C i2c_hb;
 
@@ -218,6 +220,8 @@ namespace hb_sensor
     const uint8_t ENABLE = 0x01;
     const uint8_t WRITE_SET_THRESHOLD = 0x01;
   };
+
+  struct bioData &get_hb_data(void);
 
 }
 #endif

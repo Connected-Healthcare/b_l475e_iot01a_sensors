@@ -3,9 +3,9 @@
 namespace hb_sensor
 {
 
-#define DEBUG_PRINTFS 0
+#define DEBUG_PRINTF 0
 
-#if DEBUG_PRINTFS
+#if DEBUG_PRINTF
 #define debugPrintf(...) printf(__VA_ARGS__)
 #else
 #define debugPrintf(...)
@@ -482,4 +482,10 @@ namespace hb_sensor
       ThisThread::sleep_for(HEARTBEAT_TASK_DELAY_MILLISECONDS); // 250 millseconds
     }
   }
+
+  struct bioData &get_hb_data(void)
+  {
+    return body;
+  }
+
 }

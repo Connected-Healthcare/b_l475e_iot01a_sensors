@@ -2,7 +2,7 @@
 
 namespace gps
 {
-    gps_coordinates_s adafruit_PA6H::get_gps_coordinates(void)
+    gps_coordinates_s get_gps_coordinates(void)
     {
         return gps_coordinates_data;
     }
@@ -130,7 +130,6 @@ namespace gps
             }
             memset(curr_line_buffer, 0, UART_BUF_LEN);
             index = 0;
-            gps_struct_init();
         }
     }
 }
