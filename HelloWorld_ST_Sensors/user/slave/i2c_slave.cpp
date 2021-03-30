@@ -2,7 +2,7 @@
 
 #include "internal_sensors.hpp"
 
-#define DEBUG_PRINTF 1
+#define DEBUG_PRINTF 0
 
 #if DEBUG_PRINTF
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -114,7 +114,7 @@ namespace i2c_slave
       send_spec_co_humidity();
       break;
 
-    // // SGP30
+    // SGP30
     // case 0x10:
     //   send_sgp30_co2();
     //   break;
@@ -300,11 +300,12 @@ namespace i2c_slave
   {
     uint8_t tx_data[ARR_SIZE * 2] = {0};
     gps::gps_coordinates_s data = gps::get_gps_coordinates();
-    data.latitude = -37.123456;
-    data.longitude = 121.987650;
-    // debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(gps_.gps_coordinates_data.latitude), (uint32_t)(gps_.gps_coordinates_data.longitude));
 
-    // debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude), (uint32_t)(data.longitude));
+    // Hardcoded values (Only for testing)
+    // data.latitude = -37.123456;
+    // data.longitude = 121.987650;
+
+    debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude), (uint32_t)(data.longitude));
     uint32_t lat_data = convert_float_to_uint32_float_structure(data.latitude);
     uint32_t long_data = convert_float_to_uint32_float_structure(data.longitude);
 

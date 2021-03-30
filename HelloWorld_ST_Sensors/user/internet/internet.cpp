@@ -108,7 +108,7 @@ namespace internet
     gps::gps_coordinates_s gps_data = gps::get_gps_coordinates();
 
     sprintf((char *)buffer,
-            "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%.2f,%.2f",
+            "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%d,%d,%.2f,%.2f",
             data.hts221_temperature, data.hts221_humidity,
             data.lps22hb_temperature, data.lps22hb_pressure,
             data.magnetometer_axes[0], data.magnetometer_axes[1],
