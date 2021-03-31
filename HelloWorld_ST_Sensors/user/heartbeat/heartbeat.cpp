@@ -1,24 +1,26 @@
-#include "heartbeat_logic.hpp"
-
-namespace hb_sensor
-{
+#include "heartbeat.hpp"
 
 #define DEBUG_PRINTF 0
 
 #if DEBUG_PRINTF
-#define debugPrintf(...) printf(__VA_ARGS__)
+#define debugPrintf(...) debugPrintf(__VA_ARGS__)
 #else
 #define debugPrintf(...)
 #endif
 
-  uint8_t hb_sensor_class::begin(void)
+namespace heartbeat
+{
+
+  static struct bioData body;
+
+  uint8_t sparkfun_MAX32664::begin(void)
   {
     heartbeat__initialize_application_mode();
     uint8_t responseByte = readByte_1(READ_DEVICE_MODE, 0x00);
     return responseByte;
   }
 
-  uint8_t hb_sensor_class::configBpm(uint8_t mode)
+  uint8_t sparkfun_MAX32664::configBpm(uint8_t mode)
   {
     uint8_t statusChauf = 0;
 
@@ -72,7 +74,7 @@ namespace hb_sensor
   // (uint16_t), and the finger detected status (uint8_t). Note that the the
   // algorithm is stated as "wrist" though the sensor only works with the finger.
   // The data is loaded into the whrmFifo and returned.
-  struct bioData hb_sensor_class::readBpm(void)
+  struct bioData sparkfun_MAX32664::readBpm(void)
   {
     struct bioData libBpm;
     uint8_t statusChauf; // The status chauffeur captures return values.
@@ -161,7 +163,7 @@ namespace hb_sensor
 
   // Family Byte: OUTPUT_MODE (0x10), Index Byte: SET_FORMAT (0x00),
   // Write Byte : outputType (Parameter values in OUTPUT_MODE_WRITE_BYTE)
-  uint8_t hb_sensor_class::setOutputMode(uint8_t outputType)
+  uint8_t sparkfun_MAX32664::setOutputMode(uint8_t outputType)
   {
     if (outputType > SENSOR_ALGO_COUNTER) // Bytes between 0x00 and 0x07
       return INCORR_PARAM;
@@ -179,7 +181,7 @@ namespace hb_sensor
   // byte: intThres (parameter - value betwen 0 and 0xFF). This function changes
   // the threshold for the FIFO interrupt bit/pin. The interrupt pin is the MFIO
   // pin which is set to INPUT after IC initialization (begin).
-  uint8_t hb_sensor_class::setFifoThreshold(uint8_t intThresh)
+  uint8_t sparkfun_MAX32664::setFifoThreshold(uint8_t intThresh)
   {
     // Checks that there was succesful communcation, not that the threshold was
     // set correctly.
@@ -194,7 +196,7 @@ namespace hb_sensor
   // ENABLE_AGC_ALGO (0x00)
   // This function enables (one) or disables (zero) the automatic gain control
   // algorithm.
-  uint8_t hb_sensor_class::agcAlgoControl(uint8_t enable)
+  uint8_t sparkfun_MAX32664::agcAlgoControl(uint8_t enable)
   {
     if (enable == 0 || enable == 1)
     {
@@ -212,7 +214,7 @@ namespace hb_sensor
   // Family Byte: ENABLE_SENSOR (0x44), Index Byte: ENABLE_MAX30101 (0x03), Write
   // Byte: senSwitch  (parameter - 0x00 or 0x01).
   // This function enables the MAX30101.
-  uint8_t hb_sensor_class::max30101Control(uint8_t senSwitch)
+  uint8_t sparkfun_MAX32664::max30101Control(uint8_t senSwitch)
   {
     if (senSwitch == 0 || senSwitch == 1)
     {
@@ -232,7 +234,7 @@ namespace hb_sensor
   // ENABLE_WHRM_ALGO (0x02)
   // This function enables (one) or disables (zero) the wrist heart rate monitor
   // algorithm.
-  uint8_t hb_sensor_class::maximFastAlgoControl(uint8_t mode)
+  uint8_t sparkfun_MAX32664::maximFastAlgoControl(uint8_t mode)
   {
     if (mode == 0 || mode == 1 || mode == 2)
     {
@@ -251,7 +253,7 @@ namespace hb_sensor
   // READ_AGC_NUM_SAMPLES (0x00), Write Byte: READ_AGC_NUM_SAMPLES_ID (0x03)
   // This function changes the number of samples that are averaged.
   // It takes a paramater of zero to 255.
-  uint8_t hb_sensor_class::readAlgoSamples(void)
+  uint8_t sparkfun_MAX32664::readAlgoSamples(void)
   {
     uint8_t samples = readByte_2(READ_ALGORITHM_CONFIG, READ_AGC_NUM_SAMPLES,
                                  READ_AGC_NUM_SAMPLES_ID);
@@ -260,7 +262,7 @@ namespace hb_sensor
 
   // Family Byte: HUB_STATUS (0x00), Index Byte: 0x00, No Write Byte.
   // The following function checks the status of the FIFO.
-  uint8_t hb_sensor_class::readSensorHubStatus(void)
+  uint8_t sparkfun_MAX32664::readSensorHubStatus(void)
   {
     uint8_t status = readByte_1(0x00, 0x00); // Just family and index byte.
     return status;                           // Will return 0x00
@@ -269,7 +271,7 @@ namespace hb_sensor
   // Family Byte: READ_DATA_OUTPUT (0x12), Index Byte: NUM_SAMPLES (0x00), Write
   // Byte: NONE
   // This function returns the number of samples available in the FIFO.
-  uint8_t hb_sensor_class::numSamplesOutFifo(void)
+  uint8_t sparkfun_MAX32664::numSamplesOutFifo(void)
   {
     uint8_t sampAvail = readByte_1(READ_DATA_OUTPUT, NUM_SAMPLES);
     return sampAvail;
@@ -277,7 +279,7 @@ namespace hb_sensor
 
   // Utilities (Heartbeat Low-level APIs)
 
-  void hb_sensor_class::heartbeat__initialize_application_mode(void)
+  void sparkfun_MAX32664::heartbeat__initialize_application_mode(void)
   {
     DigitalOut mfio_pin(PD_14);
     DigitalOut rst_pin(PB_0);
@@ -292,8 +294,8 @@ namespace hb_sensor
     ThisThread::sleep_for(1000);
   }
 
-  uint8_t hb_sensor_class::enableWrite(uint8_t _familyByte, uint8_t _indexByte,
-                                       uint8_t _enableByte)
+  uint8_t sparkfun_MAX32664::enableWrite(uint8_t _familyByte, uint8_t _indexByte,
+                                         uint8_t _enableByte)
   {
     uint8_t statusByte;
     const uint8_t number_of_bytes_to_read = 1;
@@ -301,8 +303,6 @@ namespace hb_sensor
 
     char readBuffer[number_of_bytes_to_read] = {0};
     char writeBuffer[number_of_bytes_to_write] = {0};
-
-    debugPrintf("Hit enableWrite()\r\n");
 
     writeBuffer[0] = static_cast<char>(_familyByte);
     writeBuffer[1] = static_cast<char>(_indexByte);
@@ -318,16 +318,14 @@ namespace hb_sensor
     return statusByte;
   }
 
-  uint8_t hb_sensor_class::writeByte_1(uint8_t _familyByte, uint8_t _indexByte,
-                                       uint8_t _writeByte)
+  uint8_t sparkfun_MAX32664::writeByte_1(uint8_t _familyByte, uint8_t _indexByte,
+                                         uint8_t _writeByte)
   {
     uint8_t statusByte;
     const uint8_t number_of_bytes_to_read = 1;
     const uint8_t number_of_bytes_to_write = 3;
     char readBuffer[number_of_bytes_to_read] = {0};
     char writeBuffer[number_of_bytes_to_write] = {0};
-
-    debugPrintf("Hit enableWrite()\r\n");
 
     writeBuffer[0] = static_cast<char>(_familyByte);
     writeBuffer[1] = static_cast<char>(_indexByte);
@@ -344,7 +342,7 @@ namespace hb_sensor
     return statusByte;
   }
 
-  uint8_t hb_sensor_class::readByte_1(uint8_t _familyByte, uint8_t _indexByte)
+  uint8_t sparkfun_MAX32664::readByte_1(uint8_t _familyByte, uint8_t _indexByte)
   {
     uint8_t statusByte;
     uint8_t returnByte;
@@ -352,8 +350,6 @@ namespace hb_sensor
     const uint8_t number_of_bytes_to_write = 2;
     char readBuffer[number_of_bytes_to_read] = {0};
     char writeBuffer[number_of_bytes_to_write] = {0};
-
-    debugPrintf("Hit readByte_1()\r\n");
 
     writeBuffer[0] = static_cast<char>(_familyByte);
     writeBuffer[1] = static_cast<char>(_indexByte);
@@ -375,8 +371,8 @@ namespace hb_sensor
     return returnByte;
   }
 
-  uint8_t hb_sensor_class::readByte_2(uint8_t _familyByte, uint8_t _indexByte,
-                                      uint8_t _writeByte)
+  uint8_t sparkfun_MAX32664::readByte_2(uint8_t _familyByte, uint8_t _indexByte,
+                                        uint8_t _writeByte)
   {
     uint8_t statusByte;
     uint8_t returnByte;
@@ -384,8 +380,6 @@ namespace hb_sensor
     const uint8_t number_of_bytes_to_write = 3;
     char readBuffer[number_of_bytes_to_read] = {0};
     char writeBuffer[number_of_bytes_to_write] = {0};
-
-    debugPrintf("Hit readByte_2()\r\n");
 
     writeBuffer[0] = static_cast<char>(_familyByte);
     writeBuffer[1] = static_cast<char>(_indexByte);
@@ -407,8 +401,8 @@ namespace hb_sensor
     return returnByte;
   }
 
-  uint8_t hb_sensor_class::readFillArray(uint8_t _familyByte, uint8_t _indexByte,
-                                         uint8_t arraySize, uint8_t *array)
+  uint8_t sparkfun_MAX32664::readFillArray(uint8_t _familyByte, uint8_t _indexByte,
+                                           uint8_t arraySize, uint8_t *array)
   {
     uint8_t statusByte;
 
@@ -417,8 +411,6 @@ namespace hb_sensor
 
     char readBuffer[number_of_bytes_to_read] = {0};
     char writeBuffer[number_of_bytes_to_write] = {0};
-
-    debugPrintf("Hit readFillArray()\r\n");
 
     writeBuffer[0] = static_cast<char>(_familyByte);
     writeBuffer[1] = static_cast<char>(_indexByte);
@@ -448,32 +440,32 @@ namespace hb_sensor
     return statusByte;
   }
 
-  void hb_sensor_class::hb_start(void)
+  void sparkfun_MAX32664::hb_start(void)
   {
     uint8_t response_code;
     response_code = begin();
     if (!response_code)
     {
-      printf("Heartbeat sensor started\r\n");
+      debugPrintf("Heartbeat sensor started\r\n");
       response_code = configBpm(0x01);
       if (!response_code)
       {
-        printf("Heartbeat sensor successfully configured\r\n");
+        debugPrintf("Heartbeat sensor successfully configured\r\n");
         ThisThread::sleep_for(DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS);
-        thread_.start(callback(this, &hb_sensor_class::hb_thread_task));
+        thread_.start(callback(this, &sparkfun_MAX32664::hb_thread_task));
       }
       else
       {
-        printf("Could not configure the Heartbeat sensor. response_code = %d\r\n", response_code);
+        debugPrintf("Could not configure the Heartbeat sensor. response_code = %d\r\n", response_code);
       }
     }
     else
     {
-      printf("Could not communicate with the sensor\r\n");
+      debugPrintf("Could not communicate with the sensor\r\n");
     }
   }
 
-  void hb_sensor_class::hb_thread_task(void)
+  void sparkfun_MAX32664::hb_thread_task(void)
   {
     while (1)
     {

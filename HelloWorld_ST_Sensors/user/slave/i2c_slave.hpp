@@ -5,7 +5,7 @@
 
 // #include "sgp30.hpp"
 #include "spec_co.hpp"
-#include "heartbeat_logic.hpp"
+#include "heartbeat.hpp"
 #include "gps.hpp"
 
 namespace i2c_slave

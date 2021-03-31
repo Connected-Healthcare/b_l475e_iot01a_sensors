@@ -44,7 +44,7 @@
 #include "mbed.h"
 #include "spec_co.hpp"
 #include "gps.hpp"
-#include "heartbeat_logic.hpp"
+#include "heartbeat.hpp"
 
 // Sending data over BT
 #include "hc05.hpp"
@@ -63,18 +63,18 @@
 static spec::CarbonMonoxide co(PA_0, PA_1);                 // UART4
 static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600);        // UART3
 static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co); // I2C1
-// static bt::hc05 btserial(PA_2, PA_3, 9600);             // UART2
-static hb_sensor::hb_sensor_class hb_obj(PB_9, PB_8); // I2C3
+static bt::hc05 btserial(PA_2, PA_3, 9600);                 // UART2
+static heartbeat::sparkfun_MAX32664 hb_obj(PB_9, PB_8);     // I2C3
 
 volatile bool is_recv = false;
-// char btserial_data[200];
+char btserial_data[200];
 
-// void btserial_process(const char *line)
-// {
-//   memset(btserial_data, 0, sizeof(btserial_data));
-//   strcpy(btserial_data, line);
-//   is_recv = true;
-// }
+void btserial_process(const char *line)
+{
+  memset(btserial_data, 0, sizeof(btserial_data));
+  strcpy(btserial_data, line);
+  is_recv = true;
+}
 
 volatile bool is_gps_recv = false;
 
@@ -91,7 +91,7 @@ int main()
   internal_sensor::init_sensor();
   co.initialize();
   slave.init_thread();
-  // btserial.register_process_func(btserial_process);
+  btserial.register_process_func(btserial_process);
   gps_obj.register_func(gps_get_line);
   hb_obj.hb_start();
 
@@ -111,17 +111,17 @@ int main()
 
   debugPrintf("\r\n--- Starting new run ---\r\n\r\n");
   ThisThread::sleep_for(1000);
-  // char buffer[200] = {0};
+  char buffer[200] = {0};
 
   while (1)
   {
 
     // Receive BT data from Android App to board
-    // if (is_recv)
-    // {
-    //   is_recv = false;
-    //   printf("btrecv: %s\r\n", btserial_data);
-    // }
+    if (is_recv)
+    {
+      is_recv = false;
+      printf("btrecv: %s\r\n", btserial_data);
+    }
 
     debugPrintf("ST B-L475E-IOT01A - I2C Slave\r\n");
 
@@ -161,23 +161,23 @@ int main()
     }
 
     // Heartbeat Sensor
-    hb_sensor::bioData hb_data = hb_sensor::get_hb_data();
+    heartbeat::bioData hb_data = heartbeat::get_hb_data();
     debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n", hb_data.heartRate, hb_data.confidence, hb_data.oxygen, hb_data.status);
 
     debugPrintf("-----\r\n");
 
     // Send BT data from board to Android App
-    // sprintf(buffer,
-    //         "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
-    //         "%ld,%ld,%d,%d,%lu,%d,%u,%.2f,%.2f\r\n",
-    //         data.hts221_temperature, data.hts221_humidity,
-    //         data.lps22hb_temperature, data.lps22hb_pressure,
-    //         data.magnetometer_axes[0], data.magnetometer_axes[1],
-    //         data.magnetometer_axes[2], data.acceleration_axes[0],
-    //         data.acceleration_axes[1], data.acceleration_axes[2],
-    //         data.gyroscope_axes[0], data.gyroscope_axes[1],
-    //         data.gyroscope_axes[2], data.distance, hb_obj.body.heartRate, hb_obj.body.oxygen, spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity, gps_coordinates_data.latitude, gps_coordinates_data.longitude);
-    // btserial.write(buffer);
+    sprintf(buffer,
+            "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,"
+            "%ld,%ld,%d,%d,%lu,%d,%u,%.2f,%.2f\r\n",
+            data.hts221_temperature, data.hts221_humidity,
+            data.lps22hb_temperature, data.lps22hb_pressure,
+            data.magnetometer_axes[0], data.magnetometer_axes[1],
+            data.magnetometer_axes[2], data.acceleration_axes[0],
+            data.acceleration_axes[1], data.acceleration_axes[2],
+            data.gyroscope_axes[0], data.gyroscope_axes[1],
+            data.gyroscope_axes[2], data.distance, hb_data.heartRate, hb_data.oxygen, spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity, gps_coordinates_data.latitude, gps_coordinates_data.longitude);
+    btserial.write(buffer);
     gps_coordinates_data.latitude = 0.0;
     gps_coordinates_data.longitude = 0.0;
     ThisThread::sleep_for(500);

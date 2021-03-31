@@ -13,7 +13,7 @@
 static const uint32_t DELAY_AFTER_HEARTBEAT_INITIALIZE_MILLISECONDS = 4000;
 static const uint32_t HEARTBEAT_TASK_DELAY_MILLISECONDS = 250;
 
-namespace hb_sensor
+namespace heartbeat
 {
   struct bioData
   {
@@ -147,12 +147,10 @@ namespace hb_sensor
     ENABLE_WHRM_ALGO = 0x02
   };
 
-  static struct bioData body;
-
-  class hb_sensor_class
+  class sparkfun_MAX32664
   {
   public:
-    hb_sensor_class(PinName sda, PinName scl) : i2c_hb(sda, scl)
+    sparkfun_MAX32664(PinName sda, PinName scl) : i2c_hb(sda, scl)
     {
     }
 
@@ -195,8 +193,6 @@ namespace hb_sensor
     void hb_start(void);
 
     void hb_thread_task(void);
-
-    // struct bioData &get_hb_data(void);
 
   private:
     I2C i2c_hb;

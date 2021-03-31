@@ -3,7 +3,7 @@
 #include "mbed.h"
 
 #include "internal_sensors.hpp"
-#include "user/heartbeat/heartbeat_logic.hpp"
+#include "user/heartbeat/heartbeat.hpp"
 #include "user/gps/gps.hpp"
 
 #include "access_point.h"
@@ -104,7 +104,7 @@ namespace internet
     uint8_t buffer[8 * 4 + 10 * 10 + 10 + 1] = {0};
 
     const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-    hb_sensor::bioData hb_data = hb_sensor::get_hb_data();
+    heartbeat::bioData hb_data = heartbeat::get_hb_data();
     gps::gps_coordinates_s gps_data = gps::get_gps_coordinates();
 
     sprintf((char *)buffer,
