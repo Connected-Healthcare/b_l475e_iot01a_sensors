@@ -1,5 +1,5 @@
-#ifndef USER_HEARTBEATLOGIC_H_
-#define USER_HEARTBEATLOGIC_H_
+#ifndef USER_HEARTBEAT_H_
+#define USER_HEARTBEAT_H_
 
 #include "mbed.h"
 #include <string.h>
@@ -217,7 +217,7 @@ namespace heartbeat
     const uint8_t WRITE_SET_THRESHOLD = 0x01;
   };
 
-  struct bioData &get_hb_data(void);
+  const bioData &get_hb_data(void);
 
 }
 #endif

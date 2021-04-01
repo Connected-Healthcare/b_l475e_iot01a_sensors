@@ -161,7 +161,7 @@ int main()
     }
 
     // Heartbeat Sensor
-    heartbeat::bioData hb_data = heartbeat::get_hb_data();
+    const heartbeat::bioData hb_data = heartbeat::get_hb_data();
     debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n", hb_data.heartRate, hb_data.confidence, hb_data.oxygen, hb_data.status);
 
     debugPrintf("-----\r\n");

@@ -1,4 +1,4 @@
-#include "heartbeat.hpp"
+#include "user/heartbeat/heartbeat.hpp"
 
 #define DEBUG_PRINTF 0
 
@@ -475,7 +475,7 @@ namespace heartbeat
     }
   }
 
-  struct bioData &get_hb_data(void)
+  const struct bioData &get_hb_data(void)
   {
     return body;
   }

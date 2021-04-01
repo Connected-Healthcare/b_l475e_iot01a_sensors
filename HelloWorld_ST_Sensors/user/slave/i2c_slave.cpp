@@ -1,6 +1,6 @@
-#include "i2c_slave.hpp"
+#include "user/slave/i2c_slave.hpp"
 
-#include "internal_sensors.hpp"
+#include "user/internal/internal_sensors.hpp"
 
 #define DEBUG_PRINTF 0
 
@@ -283,7 +283,7 @@ namespace i2c_slave
   void SlaveCommunication::send_heartbeat_data()
   {
     uint8_t tx_data[8] = {0};
-    heartbeat::bioData &data = heartbeat::get_hb_data();
+    const heartbeat::bioData &data = heartbeat::get_hb_data();
     uint16_to_uint8_array(static_cast<uint16_t>(data.heartRate),
                           tx_data);
     uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.confidence),

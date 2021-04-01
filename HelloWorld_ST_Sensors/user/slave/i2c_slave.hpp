@@ -3,10 +3,9 @@
 
 #include "mbed.h"
 
-// #include "sgp30.hpp"
-#include "spec_co.hpp"
-#include "heartbeat.hpp"
-#include "gps.hpp"
+#include "user/spec/spec_co.hpp"
+#include "user/heartbeat/heartbeat.hpp"
+#include "user/gps/gps.hpp"
 
 namespace i2c_slave
 {

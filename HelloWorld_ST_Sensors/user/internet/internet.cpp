@@ -2,7 +2,7 @@
 
 #include "mbed.h"
 
-#include "internal_sensors.hpp"
+#include "user/internal/internal_sensors.hpp"
 #include "user/heartbeat/heartbeat.hpp"
 #include "user/gps/gps.hpp"
 

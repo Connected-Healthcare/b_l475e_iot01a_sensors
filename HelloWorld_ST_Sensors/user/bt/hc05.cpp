@@ -1,4 +1,4 @@
-#include "hc05.hpp"
+#include "user/bt/hc05.hpp"
 
 namespace bt
 {

@@ -1,4 +1,4 @@
-#include "gps.hpp"
+#include "user/gps/gps.hpp"
 
 namespace gps
 {
