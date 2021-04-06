@@ -1,21 +1,21 @@
-#include "hc05.hpp"
+#include "user/bt/hc05.hpp"
 
 namespace bt {
 
-void hc05::write(const char* data) {
+void hc05::write(const char *data) {
   while (*data != 0) {
     bt_uart_.putc(*data);
     data++;
   }
 }
 
-void hc05::write(const char* data, size_t bytes_to_write) {
+void hc05::write(const char *data, size_t bytes_to_write) {
   for (size_t i = 0; i < bytes_to_write; i++) {
     bt_uart_.putc(data[i]);
   }
 }
 
-void hc05::register_process_func(void (*process)(const char* newline)) {
+void hc05::register_process_func(void (*process)(const char *newline)) {
   process_func_ = process;
 }
 
@@ -35,4 +35,4 @@ void hc05::interrupt_cb() {
   }
 }
 
-}  // namespace bt
+} // namespace bt

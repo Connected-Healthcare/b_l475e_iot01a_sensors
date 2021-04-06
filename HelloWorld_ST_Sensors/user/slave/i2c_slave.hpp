@@ -3,16 +3,18 @@
 
 #include "mbed.h"
 
-#include "sgp30.hpp"
-#include "spec_co.hpp"
+#include "user/gps/gps.hpp"
+#include "user/heartbeat/heartbeat.hpp"
+#include "user/spec/spec_co.hpp"
 
 namespace i2c_slave {
 
 class SlaveCommunication {
 public:
-  SlaveCommunication(PinName sda, PinName scl, spec::CarbonMonoxide &co,
-                     sensor::SGP30 &sgp30)
-      : slave_(sda, scl), co_(co), sgp30_(sgp30){};
+  SlaveCommunication(PinName sda, PinName scl, spec::CarbonMonoxide &co)
+      : slave_(sda, scl), co_(co) {
+    slave_.frequency(100000);
+  };
   void init_thread();
 
 public:
@@ -27,8 +29,8 @@ private:
   void send_spec_co_temperature();
   void send_spec_co_humidity();
 
-  void send_sgp30_co2();
-  void send_sgp30_voc();
+  // void send_sgp30_co2();
+  // void send_sgp30_voc();
 
   void send_hts221_temperature();
   void send_hts221_humidity();
@@ -39,12 +41,15 @@ private:
   void send_gyroscope();
   void send_magnetometer();
 
+  void send_heartbeat_data();
+
+  void send_gps_coordinates_data();
+
 private:
   I2CSlave slave_;
   Thread thread_;
-
   spec::CarbonMonoxide &co_;
-  sensor::SGP30 &sgp30_;
+  // sensor::SGP30 &sgp30_;
 };
 
 } // namespace i2c_slave

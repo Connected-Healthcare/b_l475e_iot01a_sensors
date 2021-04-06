@@ -7,33 +7,38 @@ PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
 def parse_and_print(dl: list):
     co_gas_concentration = dl[0]
     _, _ = dl[1], dl[2]
-    sgp30_co2, sgp30_voc = dl[3], dl[4]
 
-    hts221_temperature = dl[5]
-    hts221_humidity = dl[6]
-    lps22hb_temperature = dl[7]
-    lps22hb_pressure = dl[8]
+    hts221_temperature = dl[3]
+    hts221_humidity = dl[4]
+    lps22hb_temperature = dl[5]
+    lps22hb_pressure = dl[6]
 
     magnetometer = list()
+    magnetometer.append(data[7])
+    magnetometer.append(data[8])
     magnetometer.append(data[9])
-    magnetometer.append(data[10])
-    magnetometer.append(data[11])
 
     acceleration = list()
+    acceleration.append(data[10])
+    acceleration.append(data[11])
     acceleration.append(data[12])
-    acceleration.append(data[13])
-    acceleration.append(data[14])
 
     gyroscope = list()
+    gyroscope.append(data[13])
+    gyroscope.append(data[14])
     gyroscope.append(data[15])
-    gyroscope.append(data[16])
-    gyroscope.append(data[17])
 
-    time_of_flight = data[18]
+    time_of_flight = data[16]
+
+    heartbeat = list()
+    heartbeat.append(data[17])
+    heartbeat.append(data[18])
+
+    gps = list()
+    gps.append(data[19])
+    gps.append(data[20])
 
     print(f'CO Gas Concentration {co_gas_concentration}')
-    print(f'SGP30 CO2 {sgp30_co2}')
-    print(f'SGP30 VOC {sgp30_voc}')
 
     print(f'HTS221_temperature {hts221_temperature}')
     print(f'HTS221_humidity {hts221_humidity}')
@@ -46,8 +51,11 @@ def parse_and_print(dl: list):
         f'Acceleration {acceleration[0]} {acceleration[1]} {acceleration[2]}')
     print(
         f'Gyroscope {gyroscope[0]} {gyroscope[1]} {gyroscope[2]}')
+    print(
+        f'Heartrate {heartbeat[0]} Oxygen {heartbeat[1]}')
+    print(
+        f'Latitude {gps[0]} Longitude {gps[1]}')
     print('--------')
-
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))

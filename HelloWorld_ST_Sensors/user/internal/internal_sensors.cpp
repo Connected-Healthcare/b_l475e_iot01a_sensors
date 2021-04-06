@@ -1,4 +1,4 @@
-#include "internal_sensors.hpp"
+#include "user/internal/internal_sensors.hpp"
 
 #include "mbed.h"
 

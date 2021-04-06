@@ -1,15 +1,39 @@
-#include "i2c_slave.hpp"
+#include "user/slave/i2c_slave.hpp"
 
-#include "internal_sensors.hpp"
+#include "user/internal/internal_sensors.hpp"
 
-static void uint32_to_uint8_array(uint32_t data, uint8_t *arr) {
+#define DEBUG_PRINTF 0
+
+#if DEBUG_PRINTF
+#define debugPrintf(...) printf(__VA_ARGS__)
+#else
+#define debugPrintf(...)
+#endif
+
+void uint32_to_uint8_array(uint32_t data, uint8_t *arr) {
   arr[0] = (data >> (0 * 8)) & 0xFF;
   arr[1] = (data >> (1 * 8)) & 0xFF;
   arr[2] = (data >> (2 * 8)) & 0xFF;
   arr[3] = (data >> (3 * 8)) & 0xFF;
 }
 
-static uint32_t convert_float_to_uint32_float_structure(float data) {
+void uint64_to_uint8_array(uint64_t data, uint8_t *arr) {
+  arr[0] = (data >> (0 * 8)) & 0xFF;
+  arr[1] = (data >> (1 * 8)) & 0xFF;
+  arr[2] = (data >> (2 * 8)) & 0xFF;
+  arr[3] = (data >> (3 * 8)) & 0xFF;
+  arr[4] = (data >> (4 * 8)) & 0xFF;
+  arr[5] = (data >> (5 * 8)) & 0xFF;
+  arr[6] = (data >> (6 * 8)) & 0xFF;
+  arr[7] = (data >> (7 * 8)) & 0xFF;
+}
+
+void uint16_to_uint8_array(uint16_t data, uint8_t *arr) {
+  arr[0] = (data >> (0 * 8)) & 0xFF;
+  arr[1] = (data >> (1 * 8)) & 0xFF;
+}
+
+uint32_t convert_float_to_uint32_float_structure(float data) {
   uint32_t rdata = *(uint32_t *)&data;
   return rdata;
 }
@@ -62,10 +86,13 @@ void SlaveCommunication::handle_data() {
  * 0x26 i Gyroscope                 12
  * 0x27 i Magnetometer              12
  *
+ * 0x30 hb Heartbeat Data           8
+ *
+ * 0x40 gps GPS Data                8
  */
 void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   switch (address) {
-  // SPEC CO
+  // // SPEC CO
   case 0x00:
     send_spec_co_gas_concentration();
     break;
@@ -77,12 +104,12 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
     break;
 
   // SGP30
-  case 0x10:
-    send_sgp30_co2();
-    break;
-  case 0x11:
-    send_sgp30_voc();
-    break;
+  // case 0x10:
+  //   send_sgp30_co2();
+  //   break;
+  // case 0x11:
+  //   send_sgp30_voc();
+  //   break;
 
   // INTERNAL
   case 0x20:
@@ -109,6 +136,12 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   case 0x27:
     send_magnetometer();
     break;
+  case 0x30:
+    send_heartbeat_data();
+    break;
+  case 0x40:
+    send_gps_coordinates_data();
+    break;
   default:
     break;
   }
@@ -133,17 +166,19 @@ void SlaveCommunication::send_spec_co_humidity() {
   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
 }
 
-void SlaveCommunication::send_sgp30_co2() {
-  uint8_t tx_data[ARR_SIZE] = {0};
-  uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_co2()), tx_data);
-  slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-}
+// void SlaveCommunication::send_sgp30_co2()
+// {
+//   uint8_t tx_data[ARR_SIZE] = {0};
+//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_co2()), tx_data);
+//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
+// }
 
-void SlaveCommunication::send_sgp30_voc() {
-  uint8_t tx_data[ARR_SIZE] = {0};
-  uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_voc()), tx_data);
-  slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-}
+// void SlaveCommunication::send_sgp30_voc()
+// {
+//   uint8_t tx_data[ARR_SIZE] = {0};
+//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_voc()), tx_data);
+//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
+// }
 
 void SlaveCommunication::send_hts221_temperature() {
   uint8_t tx_data[ARR_SIZE] = {0};
@@ -223,4 +258,34 @@ void SlaveCommunication::send_magnetometer() {
   slave_.write((const char *)tx_data, ARR_SIZE * 3);
 }
 
+void SlaveCommunication::send_heartbeat_data() {
+  uint8_t tx_data[8] = {0};
+  const heartbeat::bioData &data = heartbeat::get_hb_data();
+  uint16_to_uint8_array(static_cast<uint16_t>(data.heartRate), tx_data);
+  uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.confidence),
+                        tx_data + 2);
+  uint16_to_uint8_array(static_cast<uint16_t>(data.oxygen), tx_data + 4);
+  uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.status),
+                        tx_data + 6);
+
+  slave_.write((const char *)tx_data, ARR_SIZE * 2);
+}
+
+void SlaveCommunication::send_gps_coordinates_data() {
+  uint8_t tx_data[ARR_SIZE * 2] = {0};
+  gps::gps_coordinates_s data = gps::get_gps_coordinates();
+
+  // Hardcoded values (Only for testing)
+  // data.latitude = -37.123456;
+  // data.longitude = 121.987650;
+
+  debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude),
+              (uint32_t)(data.longitude));
+  uint32_t lat_data = convert_float_to_uint32_float_structure(data.latitude);
+  uint32_t long_data = convert_float_to_uint32_float_structure(data.longitude);
+
+  uint32_to_uint8_array(static_cast<uint32_t>(lat_data), tx_data);
+  uint32_to_uint8_array(static_cast<uint32_t>(long_data), tx_data + 4);
+  slave_.write((const char *)tx_data, ARR_SIZE * 2);
+}
 } // namespace i2c_slave

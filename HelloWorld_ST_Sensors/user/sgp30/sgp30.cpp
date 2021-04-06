@@ -1,7 +1,6 @@
-#include "sgp30.hpp"
+#include "user/sgp30/sgp30.hpp"
 
 namespace sensor {
-
 void SGP30::start(void) {
   iaq_init();
   thread_.start(callback(this, &SGP30::thread_task));
