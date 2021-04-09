@@ -42,17 +42,17 @@ def parse_and_print(dl: list):
 
     print(f'HTS221_temperature {hts221_temperature}')
     print(f'HTS221_humidity {hts221_humidity}')
-    print(f'Lps22hb_temperature {lps22hb_temperature}')
-    print(f'Lps22hb_pressure {lps22hb_pressure}')
+    print(f'LPS22HB_temperature {lps22hb_temperature}')
+    print(f'LPS22HB_pressure {lps22hb_pressure}')
     print(f'Time_of_flight {time_of_flight}')
     print(
         f'Magnetometer {magnetometer[0]} {magnetometer[1]} {magnetometer[2]}')
     print(
-        f'Acceleration {acceleration[0]} {acceleration[1]} {acceleration[2]}')
+        f'Accelerometer {acceleration[0]} {acceleration[1]} {acceleration[2]}')
     print(
         f'Gyroscope {gyroscope[0]} {gyroscope[1]} {gyroscope[2]}')
     print(
-        f'Heartrate {heartbeat[0]} Oxygen {heartbeat[1]}')
+        f'Heart Rate {heartbeat[0]} Oxygen {heartbeat[1]}')
     print(
         f'Latitude {gps[0]} Longitude {gps[1]}')
     print('--------')
