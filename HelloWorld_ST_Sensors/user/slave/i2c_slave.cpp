@@ -55,7 +55,7 @@ void SlaveCommunication::handle_data() {
       transmit_sensor_data(rx_data);
       break;
     case I2CSlave::WriteGeneral:
-      printf("Write General\r\n");
+      debugPrintf("Write General\r\n");
       break;
     case I2CSlave::WriteAddressed:
       slave_.read(&rx_data, 1);
