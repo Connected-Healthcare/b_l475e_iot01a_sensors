@@ -9,6 +9,14 @@
 #include "access_point.h"
 #include "wifi.h"
 
+#define DEBUG_PRINTF 1
+
+#if DEBUG_PRINTF
+#define debugPrintf(...) printf(__VA_ARGS__)
+#else
+#define debugPrintf(...)
+#endif
+
 static uint8_t mac_address[6];
 static uint8_t ip_address[4];
 
@@ -30,39 +38,40 @@ bool connect_as_tcp(void) {
 
   wifi_status = WIFI_Init();
   if (wifi_status != WIFI_STATUS_OK) {
-    printf("WIFI Not INIT\r\n");
+    debugPrintf("WIFI Not INIT\r\n");
     return false;
   }
 
   wifi_status = WIFI_GetMAC_Address(mac_address);
   if (wifi_status != WIFI_STATUS_OK) {
-    printf("WIFI could not obtain MAC Address\r\n");
+    debugPrintf("WIFI could not obtain MAC Address\r\n");
     return false;
   }
-  printf("mac_address: %X:%X:%X:%X:%X:%X\n", mac_address[0], mac_address[1],
-         mac_address[2], mac_address[3], mac_address[4], mac_address[5]);
+  debugPrintf("mac_address: %X:%X:%X:%X:%X:%X\n", mac_address[0],
+              mac_address[1], mac_address[2], mac_address[3], mac_address[4],
+              mac_address[5]);
 
   wifi_status = WIFI_Connect(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD,
                              ACCESS_POINT_ENCRYPTION);
   if (wifi_status != WIFI_STATUS_OK) {
-    printf("WIFI could not connect\r\n");
+    debugPrintf("WIFI could not connect\r\n");
     return false;
   }
 
   wifi_status = WIFI_GetIP_Address(ip_address);
   if (wifi_status != WIFI_STATUS_OK) {
-    printf("WIFI get IP Address\r\n");
+    debugPrintf("WIFI get IP Address\r\n");
     return false;
   }
-  printf("get_ip_address: %d:%d:%d:%d\r\n", ip_address[0], ip_address[1],
-         ip_address[2], ip_address[3]);
+  debugPrintf("get_ip_address: %d:%d:%d:%d\r\n", ip_address[0], ip_address[1],
+              ip_address[2], ip_address[3]);
 
   //  TCP Connection
   uint8_t remote_ip[4] = {REMOTE_ADDRESS_CONNECTION};
   wifi_status = WIFI_OpenClientConnection(kSocket, WIFI_TCP_PROTOCOL,
                                           "TCP_CLIENT", remote_ip, kPort, 0);
   if (wifi_status != WIFI_STATUS_OK) {
-    printf("WIFI could not open client Connection\r\n");
+    debugPrintf("WIFI could not open client Connection\r\n");
     return false;
   }
 

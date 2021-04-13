@@ -39,12 +39,12 @@
  */
 
 /* Includes */
+#include "gps.hpp"
+#include "heartbeat.hpp"
 #include "i2c_slave.hpp"
 #include "internal_sensors.hpp"
 #include "mbed.h"
 #include "spec_co.hpp"
-#include "gps.hpp"
-#include "heartbeat.hpp"
 
 // Sending data over BT
 #include "hc05.hpp"
@@ -52,7 +52,7 @@
 // Sending data over TCP or UDP
 #include "internet.h"
 
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
 
 #if DEBUG_PRINT
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -69,8 +69,7 @@ static heartbeat::sparkfun_MAX32664 hb_obj(PB_9, PB_8);     // I2C3
 volatile bool is_recv = false;
 char btserial_data[200];
 
-void btserial_process(const char *line)
-{
+void btserial_process(const char *line) {
   memset(btserial_data, 0, sizeof(btserial_data));
   strcpy(btserial_data, line);
   is_recv = true;
@@ -80,14 +79,12 @@ volatile bool is_gps_recv = false;
 
 gps::gps_coordinates_s gps_coordinates_data;
 
-void gps_get_line(void)
-{
+void gps_get_line(void) {
   gps_coordinates_data = gps::get_gps_coordinates();
   is_gps_recv = true;
 }
 
-int main()
-{
+int main() {
   internal_sensor::init_sensor();
   co.initialize();
   slave.init_thread();
@@ -103,9 +100,8 @@ int main()
 
   // Start the thread
   Thread internet_thread;
-  if (connected_to_internet)
-  {
-    printf("Started Internet Thread\r\n");
+  if (connected_to_internet) {
+    debugPrintf("Started Internet Thread\r\n");
     internet_thread.start(callback(internet::send_sensor_data, &sensors));
   }
 
@@ -113,14 +109,12 @@ int main()
   ThisThread::sleep_for(1000);
   char buffer[200] = {0};
 
-  while (1)
-  {
+  while (1) {
 
     // Receive BT data from Android App to board
-    if (is_recv)
-    {
+    if (is_recv) {
       is_recv = false;
-      printf("btrecv: %s\r\n", btserial_data);
+      debugPrintf("btrecv: %s\r\n", btserial_data);
     }
 
     debugPrintf("ST B-L475E-IOT01A - I2C Slave\r\n");
@@ -128,19 +122,23 @@ int main()
     // Internal Sensor data
     internal_sensor::update_sensor_data();
     const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-    debugPrintf("HTS221: Temperature(C):          %.2f     | Humidity: %.2f\r\n",
-                data.hts221_temperature, data.hts221_humidity);
-    debugPrintf("LPS22HB: Temperature(C):         %.2f     | Pressure(mbar): %.2f\r\n",
-                data.lps22hb_temperature, data.lps22hb_pressure);
-    debugPrintf("LIS3MDL: Magnetic Field(mgauss): X: %6ld | Y: %6ld | Z: %6ld\r\n",
-                data.magnetometer_axes[0], data.magnetometer_axes[1],
-                data.magnetometer_axes[2]);
-    debugPrintf("LSM6DSL: Acceleration(mg):       X: %6ld | Y: %6ld | Z: %6ld\r\n",
-                data.acceleration_axes[0], data.acceleration_axes[1],
-                data.acceleration_axes[2]);
-    debugPrintf("LSM6DSL: Gyroscope(mdps):        X: %6ld | Y: %6ld | Z: %6ld\r\n",
-                data.gyroscope_axes[0], data.gyroscope_axes[1],
-                data.gyroscope_axes[2]);
+    debugPrintf(
+        "HTS221: Temperature(C):          %.2f     | Humidity: %.2f\r\n",
+        data.hts221_temperature, data.hts221_humidity);
+    debugPrintf(
+        "LPS22HB: Temperature(C):         %.2f     | Pressure(mbar): %.2f\r\n",
+        data.lps22hb_temperature, data.lps22hb_pressure);
+    debugPrintf(
+        "LIS3MDL: Magnetic Field(mgauss): X: %6ld | Y: %6ld | Z: %6ld\r\n",
+        data.magnetometer_axes[0], data.magnetometer_axes[1],
+        data.magnetometer_axes[2]);
+    debugPrintf(
+        "LSM6DSL: Acceleration(mg):       X: %6ld | Y: %6ld | Z: %6ld\r\n",
+        data.acceleration_axes[0], data.acceleration_axes[1],
+        data.acceleration_axes[2]);
+    debugPrintf(
+        "LSM6DSL: Gyroscope(mdps):        X: %6ld | Y: %6ld | Z: %6ld\r\n",
+        data.gyroscope_axes[0], data.gyroscope_axes[1], data.gyroscope_axes[2]);
     debugPrintf("VL53L0X: Time of Flight(mm): %7ld\r\n", data.distance);
 
     // CO Sensor
@@ -148,21 +146,26 @@ int main()
     int16_t spec_co_temp = co.get_temperature();
     uint16_t spec_co_rel_humidity = co.get_relative_humidity();
 
-    debugPrintf("IOT_CO_1000_CO:                  Gas Conc.(PPM): %4lu | Temperature(C): %d | "
+    debugPrintf("IOT_CO_1000_CO:                  Gas Conc.(PPM): %4lu | "
+                "Temperature(C): %d | "
                 "Relative Humidity: %u\r\n",
-                spec_co_gas_conc, spec_co_temp,
-                spec_co_rel_humidity);
+                spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity);
 
     // GPS
-    if (is_gps_recv == true)
-    {
-      debugPrintf("AP6H GPS:                        Latitude(deg): %f | Longitude(deg): %f\r\n", gps_coordinates_data.latitude, gps_coordinates_data.longitude);
+    if (is_gps_recv == true) {
+      debugPrintf("AP6H GPS:                        Latitude(deg): %f | "
+                  "Longitude(deg): %f\r\n",
+                  gps_coordinates_data.latitude,
+                  gps_coordinates_data.longitude);
       is_gps_recv = false;
     }
 
     // Heartbeat Sensor
     const heartbeat::bioData hb_data = heartbeat::get_hb_data();
-    debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n", hb_data.heartRate, hb_data.confidence, hb_data.oxygen, hb_data.status);
+    debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | "
+                "Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n",
+                hb_data.heartRate, hb_data.confidence, hb_data.oxygen,
+                hb_data.status);
 
     debugPrintf("-----\r\n");
 
@@ -176,7 +179,10 @@ int main()
             data.magnetometer_axes[2], data.acceleration_axes[0],
             data.acceleration_axes[1], data.acceleration_axes[2],
             data.gyroscope_axes[0], data.gyroscope_axes[1],
-            data.gyroscope_axes[2], data.distance, hb_data.heartRate, hb_data.oxygen, spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity, gps_coordinates_data.latitude, gps_coordinates_data.longitude);
+            data.gyroscope_axes[2], data.distance, hb_data.heartRate,
+            hb_data.oxygen, spec_co_gas_conc, spec_co_temp,
+            spec_co_rel_humidity, gps_coordinates_data.latitude,
+            gps_coordinates_data.longitude);
     btserial.write(buffer);
     gps_coordinates_data.latitude = 0.0;
     gps_coordinates_data.longitude = 0.0;
