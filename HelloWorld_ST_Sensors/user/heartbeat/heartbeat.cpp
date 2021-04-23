@@ -10,8 +10,6 @@
 
 namespace heartbeat {
 
-static struct bioData body;
-
 uint8_t sparkfun_MAX32664::begin(void) {
   heartbeat__initialize_application_mode();
   uint8_t responseByte = readByte_1(READ_DEVICE_MODE, 0x00);
@@ -427,6 +425,6 @@ void sparkfun_MAX32664::hb_thread_task(void) {
   }
 }
 
-const struct bioData &get_hb_data(void) { return body; }
+const struct bioData &sparkfun_MAX32664::get_hb_data(void) { return body; }
 
 } // namespace heartbeat

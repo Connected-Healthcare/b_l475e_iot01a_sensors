@@ -60,11 +60,12 @@
 #define debugPrintf(...)
 #endif
 
-static spec::CarbonMonoxide co(PA_0, PA_1);                 // UART4
-static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600);        // UART3
-static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co); // I2C1
-static bt::hc05 btserial(PA_2, PA_3, 9600);                 // UART2
-static heartbeat::sparkfun_MAX32664 hb_obj(PB_9, PB_8);     // I2C3
+static spec::CarbonMonoxide co(PA_0, PA_1);             // UART4
+static gps::adafruit_PA6H gps_obj(PC_4, PC_5, 9600);    // UART3
+static heartbeat::sparkfun_MAX32664 hb_obj(PB_9, PB_8); // I2C3
+static i2c_slave::SlaveCommunication slave(PC_1, PC_0, co, hb_obj,
+                                           gps_obj); // I2C1
+static bt::hc05 btserial(PA_2, PA_3, 9600);          // UART2
 
 volatile bool is_recv = false;
 char btserial_data[200];
@@ -75,28 +76,18 @@ void btserial_process(const char *line) {
   is_recv = true;
 }
 
-volatile bool is_gps_recv = false;
-
-gps::gps_coordinates_s gps_coordinates_data;
-
-void gps_get_line(void) {
-  gps_coordinates_data = gps::get_gps_coordinates();
-  is_gps_recv = true;
-}
-
 int main() {
   internal_sensor::init_sensor();
   co.initialize();
+  hb_obj.hb_start();
   slave.init_thread();
   btserial.register_process_func(btserial_process);
-  gps_obj.register_func(gps_get_line);
-  hb_obj.hb_start();
 
-  // NOTE, Always init this after the sensors have been initialized
   bool connected_to_internet = internet::connect_as_tcp();
-  // Add all your sensor classes here
   internet::sensors_t sensors;
   sensors.co = &co;
+  sensors.hb = &hb_obj;
+  sensors.gps = &gps_obj;
 
   // Start the thread
   Thread internet_thread;
@@ -152,16 +143,14 @@ int main() {
                 spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity);
 
     // GPS
-    if (is_gps_recv == true) {
-      debugPrintf("AP6H GPS:                        Latitude(deg): %f | "
-                  "Longitude(deg): %f\r\n",
-                  gps_coordinates_data.latitude,
-                  gps_coordinates_data.longitude);
-      is_gps_recv = false;
-    }
+    const gps::gps_coordinates_s &gps_coordinates_data =
+        gps_obj.get_gps_coordinates();
+    debugPrintf("AP6H GPS:                        Latitude(deg): %f | "
+                "Longitude(deg): %f\r\n",
+                gps_coordinates_data.latitude, gps_coordinates_data.longitude);
 
     // Heartbeat Sensor
-    const heartbeat::bioData hb_data = heartbeat::get_hb_data();
+    const heartbeat::bioData &hb_data = hb_obj.get_hb_data();
     debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | "
                 "Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n",
                 hb_data.heartRate, hb_data.confidence, hb_data.oxygen,
@@ -184,8 +173,6 @@ int main() {
             spec_co_rel_humidity, gps_coordinates_data.latitude,
             gps_coordinates_data.longitude);
     btserial.write(buffer);
-    gps_coordinates_data.latitude = 0.0;
-    gps_coordinates_data.longitude = 0.0;
     ThisThread::sleep_for(500);
   }
 }

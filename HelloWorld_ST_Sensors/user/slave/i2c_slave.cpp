@@ -92,7 +92,7 @@ void SlaveCommunication::handle_data() {
  */
 void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   switch (address) {
-  // // SPEC CO
+  // SPEC CO SENSOR
   case 0x00:
     send_spec_co_gas_concentration();
     break;
@@ -102,16 +102,7 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   case 0x02:
     send_spec_co_humidity();
     break;
-
-  // SGP30
-  // case 0x10:
-  //   send_sgp30_co2();
-  //   break;
-  // case 0x11:
-  //   send_sgp30_voc();
-  //   break;
-
-  // INTERNAL
+  // INTERNAL SENSORS
   case 0x20:
     send_hts221_temperature();
     break;
@@ -136,9 +127,11 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   case 0x27:
     send_magnetometer();
     break;
+  // HEARTBEAT SENSOR
   case 0x30:
     send_heartbeat_data();
     break;
+  // GPS
   case 0x40:
     send_gps_coordinates_data();
     break;
@@ -165,20 +158,6 @@ void SlaveCommunication::send_spec_co_humidity() {
                         tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
 }
-
-// void SlaveCommunication::send_sgp30_co2()
-// {
-//   uint8_t tx_data[ARR_SIZE] = {0};
-//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_co2()), tx_data);
-//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-// }
-
-// void SlaveCommunication::send_sgp30_voc()
-// {
-//   uint8_t tx_data[ARR_SIZE] = {0};
-//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_voc()), tx_data);
-//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-// }
 
 void SlaveCommunication::send_hts221_temperature() {
   uint8_t tx_data[ARR_SIZE] = {0};
@@ -260,7 +239,7 @@ void SlaveCommunication::send_magnetometer() {
 
 void SlaveCommunication::send_heartbeat_data() {
   uint8_t tx_data[8] = {0};
-  const heartbeat::bioData &data = heartbeat::get_hb_data();
+  const heartbeat::bioData &data = hb_.get_hb_data();
   uint16_to_uint8_array(static_cast<uint16_t>(data.heartRate), tx_data);
   uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.confidence),
                         tx_data + 2);
@@ -273,13 +252,13 @@ void SlaveCommunication::send_heartbeat_data() {
 
 void SlaveCommunication::send_gps_coordinates_data() {
   uint8_t tx_data[ARR_SIZE * 2] = {0};
-  gps::gps_coordinates_s data = gps::get_gps_coordinates();
+  const gps::gps_coordinates_s &data = gps_.get_gps_coordinates();
 
-  // Hardcoded values (Only for testing)
+  // Hardcoded values (Only for testing I2C data transmission to TI CC1352_R1)
   // data.latitude = -37.123456;
   // data.longitude = 121.987650;
 
-  debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude),
+  debugPrintf("I2C_GPS Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude),
               (uint32_t)(data.longitude));
   uint32_t lat_data = convert_float_to_uint32_float_structure(data.latitude);
   uint32_t long_data = convert_float_to_uint32_float_structure(data.longitude);

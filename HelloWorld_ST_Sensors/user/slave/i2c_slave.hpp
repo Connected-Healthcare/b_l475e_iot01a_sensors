@@ -11,8 +11,9 @@ namespace i2c_slave {
 
 class SlaveCommunication {
 public:
-  SlaveCommunication(PinName sda, PinName scl, spec::CarbonMonoxide &co)
-      : slave_(sda, scl), co_(co) {
+  SlaveCommunication(PinName sda, PinName scl, spec::CarbonMonoxide &co,
+                     heartbeat::sparkfun_MAX32664 &hb, gps::adafruit_PA6H &gps)
+      : slave_(sda, scl), co_(co), hb_(hb), gps_(gps) {
     slave_.frequency(100000);
   };
   void init_thread();
@@ -28,9 +29,6 @@ private:
   void send_spec_co_gas_concentration();
   void send_spec_co_temperature();
   void send_spec_co_humidity();
-
-  // void send_sgp30_co2();
-  // void send_sgp30_voc();
 
   void send_hts221_temperature();
   void send_hts221_humidity();
@@ -49,7 +47,8 @@ private:
   I2CSlave slave_;
   Thread thread_;
   spec::CarbonMonoxide &co_;
-  // sensor::SGP30 &sgp30_;
+  heartbeat::sparkfun_MAX32664 &hb_;
+  gps::adafruit_PA6H &gps_;
 };
 
 } // namespace i2c_slave

@@ -14,8 +14,6 @@ void SGP30::thread_task(void) {
     // measure_iaq sleeps for 12 ms
     ThisThread::sleep_for(1000 - 12);
     measure_iaq();
-
-    // TODO, Do some error checking
   }
 }
 

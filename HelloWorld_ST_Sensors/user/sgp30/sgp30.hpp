@@ -13,7 +13,6 @@ public:
 
   void start(void);
 
-  // TODO
   void get_id(void);
 
   uint16_t get_co2(void) { return co2_; }

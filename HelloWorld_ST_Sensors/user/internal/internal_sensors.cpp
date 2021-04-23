@@ -66,7 +66,6 @@ void update_sensor_data(void) {
   int status = range.get_distance(&sensor_data.distance);
   if (status == VL53L0X_ERROR_NONE) {
     // sensor_data.distance = 0;
-    // TODO, Do some processing
   }
 }
 

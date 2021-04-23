@@ -32,6 +32,8 @@ namespace internet {
 
 static void update_co_data(spec::CarbonMonoxide *co);
 static void update_internal_data();
+static void update_hb_data(heartbeat::sparkfun_MAX32664 *hb);
+static void update_gps_data(gps::adafruit_PA6H *gps);
 
 bool connect_as_tcp(void) {
   WIFI_Status_t wifi_status;
@@ -83,7 +85,8 @@ void send_sensor_data(sensors_t *sensors) {
   while (1) {
     update_co_data(sensors->co);
     update_internal_data();
-
+    update_hb_data(sensors->hb);
+    update_gps_data(sensors->gps);
     WIFI_SendData(kSocket, send_data, strlen((char *)send_data), &sent_datalen,
                   kSendTimeout);
     memset(send_data, 0, sizeof(send_data));
@@ -98,24 +101,34 @@ static void update_co_data(spec::CarbonMonoxide *co) {
   strcat((char *)send_data, (const char *)buffer);
 }
 
+static void update_hb_data(heartbeat::sparkfun_MAX32664 *hb) {
+  const heartbeat::bioData &hb_data = hb->get_hb_data();
+  uint8_t buffer[8] = {0};
+  sprintf((char *)buffer, "%u,%u,", hb_data.heartRate, hb_data.oxygen);
+  strcat((char *)send_data, (const char *)buffer);
+}
+
+static void update_gps_data(gps::adafruit_PA6H *gps) {
+  const gps::gps_coordinates_s &gps_data = gps->get_gps_coordinates();
+  uint8_t buffer[14] = {0};
+  sprintf((char *)buffer, "%.2f,%.2f,", gps_data.latitude, gps_data.longitude);
+  strcat((char *)send_data, (const char *)buffer);
+}
+
 static void update_internal_data() {
   uint8_t buffer[8 * 4 + 10 * 10 + 10 + 1] = {0};
 
   const internal_sensor::data_s &data = internal_sensor::get_sensor_data();
-  heartbeat::bioData hb_data = heartbeat::get_hb_data();
-  gps::gps_coordinates_s gps_data = gps::get_gps_coordinates();
 
   sprintf((char *)buffer,
-          "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%d,%d,%."
-          "2f,%.2f",
+          "%.2f,%.2f,%.2f,%.2f,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,",
           data.hts221_temperature, data.hts221_humidity,
           data.lps22hb_temperature, data.lps22hb_pressure,
           data.magnetometer_axes[0], data.magnetometer_axes[1],
           data.magnetometer_axes[2], data.acceleration_axes[0],
           data.acceleration_axes[1], data.acceleration_axes[2],
           data.gyroscope_axes[0], data.gyroscope_axes[1],
-          data.gyroscope_axes[2], data.distance, hb_data.heartRate,
-          hb_data.oxygen, gps_data.latitude, gps_data.longitude);
+          data.gyroscope_axes[2], data.distance);
   strcat((char *)send_data, (const char *)buffer);
 }
 

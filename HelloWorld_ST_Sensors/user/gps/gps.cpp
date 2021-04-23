@@ -1,20 +1,36 @@
 #include "user/gps/gps.hpp"
+#include "mbed.h"
+
+#define DEBUG_PRINTF 0
+
+#if DEBUG_PRINTF
+#define debugPrintf(...) debugPrintf(__VA_ARGS__)
+#else
+#define debugPrintf(...)
+#endif
 
 namespace gps {
-gps_coordinates_s get_gps_coordinates(void) { return gps_coordinates_data; }
+const gps_coordinates_s &adafruit_PA6H::get_gps_coordinates(void) { return gps_data; }
+
+void adafruit_PA6H::set_gps_coordinates(gps_coordinates_s gps_data) {
+  this->gps_data = gps_data;
+}
 
 void adafruit_PA6H::gps_struct_init(void) {
-  strcpy(gps_coordinates_data.lat_dir, "NA");
-  gps_coordinates_data.latitude = 0.0;
-  strcpy(gps_coordinates_data.lat_dir, "NA");
-  gps_coordinates_data.longitude = 0.0;
-  strcpy(gps_coordinates_data.validity, "NA");
+  gps_coordinates_s temp_gps_data = {0};
+  strcpy(temp_gps_data.lat_dir, "NA");
+  temp_gps_data.latitude = 0.0;
+  strcpy(temp_gps_data.lat_dir, "NA");
+  temp_gps_data.longitude = 0.0;
+  strcpy(temp_gps_data.validity, "NA");
+  set_gps_coordinates(temp_gps_data);
 }
 
 uint8_t adafruit_PA6H::check_gprmc_line(char *line_buff) {
   uint16_t nmea_string_token_index = 0;
   char *temp_token = NULL;
   uint8_t gps_nmea_type = GPS_INVALID_NMEA;
+  gps_coordinates_s temp_gps_data = {0};
 
   temp_token = strtok(line_buff, ",");
 
@@ -30,7 +46,7 @@ uint8_t adafruit_PA6H::check_gprmc_line(char *line_buff) {
       case GPS_GPRMC:
         switch (nmea_string_token_index) {
         case GPRMC_VALIDITY_INDEX:
-          strcpy(gps_coordinates_data.validity, temp_token);
+          strcpy(temp_gps_data.validity, temp_token);
           // Only use NMEA strings that are GPRMC and have Navigation Receiver
           // Warning set to Active (A)
           if (strcmp(temp_token, "A") != 0) {
@@ -38,35 +54,34 @@ uint8_t adafruit_PA6H::check_gprmc_line(char *line_buff) {
           }
           break;
         case GPRMC_LATITUDE_INDEX:
-          gps_coordinates_data.latitude = atof(temp_token);
+          temp_gps_data.latitude = atof(temp_token);
           break;
         case GPRMC_LATITUDE_DIR_INDEX:
-          strcpy(gps_coordinates_data.lat_dir, temp_token);
+          strcpy(temp_gps_data.lat_dir, temp_token);
           break;
         case GPRMC_LONGITUDE_INDEX:
-          gps_coordinates_data.longitude = atof(temp_token);
+          temp_gps_data.longitude = atof(temp_token);
           break;
         case GPRMC_LONGITUDE_DIR_INDEX:
-          strcpy(gps_coordinates_data.long_dir, temp_token);
+          strcpy(temp_gps_data.long_dir, temp_token);
           break;
         }
         break;
       }
     }
+    if (strcmp(temp_gps_data.lat_dir, "S") == 0) {
+      temp_gps_data.latitude = ((float)(-1.0) * temp_gps_data.latitude);
+    }
+    if (strcmp(temp_gps_data.long_dir, "W") == 0) {
+      temp_gps_data.longitude = ((float)(-1.0) * temp_gps_data.longitude);
+    }
+    set_gps_coordinates(temp_gps_data);
   }
 
-  if (strcmp(gps_coordinates_data.lat_dir, "S") == 0) {
-    gps_coordinates_data.latitude =
-        ((float)(-1.0) * gps_coordinates_data.latitude);
-  }
-  if (strcmp(gps_coordinates_data.long_dir, "W") == 0) {
-    gps_coordinates_data.longitude =
-        ((float)(-1.0) * gps_coordinates_data.longitude);
-  }
   return gps_nmea_type;
 }
 
-uint8_t adafruit_PA6H::extract_gprmc_line(char *gps_buff) {
+void adafruit_PA6H::extract_gprmc_line(char *gps_buff) {
   uint8_t gps_nmea_type = GPS_INVALID_NMEA;
   char valid_gps_string[100] = {0};
   uint16_t counter = 0;
@@ -87,14 +102,9 @@ uint8_t adafruit_PA6H::extract_gprmc_line(char *gps_buff) {
       memset(valid_gps_string, 0, strlen(valid_gps_string));
     }
   }
-  return gps_nmea_type;
 }
 
-void adafruit_PA6H::register_func(void (*external_fn)(void)) {
-  gps_process_fn_ptr = external_fn;
-}
-
-void adafruit_PA6H::gps_interrupt_cb() {
+void adafruit_PA6H::gps_interrupt_cb(void) {
   int data = gps_uart.getc();
   curr_line_buffer[index] = data;
   if (index != UART_BUF_LEN) {
@@ -102,10 +112,7 @@ void adafruit_PA6H::gps_interrupt_cb() {
   }
 
   if (data == '\n') {
-    uint8_t gps_nmea_type = extract_gprmc_line(curr_line_buffer);
-    if ((GPS_INVALID_NMEA != gps_nmea_type) && (gps_process_fn_ptr != NULL)) {
-      gps_process_fn_ptr();
-    }
+    extract_gprmc_line(curr_line_buffer);
     memset(curr_line_buffer, 0, UART_BUF_LEN);
     index = 0;
   }
