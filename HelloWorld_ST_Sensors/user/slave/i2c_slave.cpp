@@ -2,7 +2,7 @@
 
 #include "user/internal/internal_sensors.hpp"
 
-#define DEBUG_PRINTF 0
+#define DEBUG_PRINTF 1
 
 #if DEBUG_PRINTF
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -260,7 +260,7 @@ void SlaveCommunication::send_magnetometer() {
 
 void SlaveCommunication::send_heartbeat_data() {
   uint8_t tx_data[8] = {0};
-  const heartbeat::bioData &data = heartbeat::get_hb_data();
+  const heartbeat::bioData &data = hb_.get_hb_data();
   uint16_to_uint8_array(static_cast<uint16_t>(data.heartRate), tx_data);
   uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.confidence),
                         tx_data + 2);
@@ -273,13 +273,13 @@ void SlaveCommunication::send_heartbeat_data() {
 
 void SlaveCommunication::send_gps_coordinates_data() {
   uint8_t tx_data[ARR_SIZE * 2] = {0};
-  gps::gps_coordinates_s data = gps::get_gps_coordinates();
+  gps::gps_coordinates_s data = gps_.get_gps_coordinates();
 
-  // Hardcoded values (Only for testing)
+  // Hardcoded values (Only for testing I2C data transmission to TI CC1352_R1)
   // data.latitude = -37.123456;
   // data.longitude = 121.987650;
 
-  debugPrintf("I2C Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude),
+  debugPrintf("I2C_GPS Lat: %lu | Long: %lu\r\n", (uint32_t)(data.latitude),
               (uint32_t)(data.longitude));
   uint32_t lat_data = convert_float_to_uint32_float_structure(data.latitude);
   uint32_t long_data = convert_float_to_uint32_float_structure(data.longitude);

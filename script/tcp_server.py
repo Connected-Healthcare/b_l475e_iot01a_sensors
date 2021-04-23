@@ -18,10 +18,10 @@ def parse_and_print(dl: list):
     magnetometer.append(data[8])
     magnetometer.append(data[9])
 
-    acceleration = list()
-    acceleration.append(data[10])
-    acceleration.append(data[11])
-    acceleration.append(data[12])
+    accelerometer = list()
+    accelerometer.append(data[10])
+    accelerometer.append(data[11])
+    accelerometer.append(data[12])
 
     gyroscope = list()
     gyroscope.append(data[13])
@@ -48,7 +48,7 @@ def parse_and_print(dl: list):
     print(
         f'Magnetometer {magnetometer[0]} {magnetometer[1]} {magnetometer[2]}')
     print(
-        f'Accelerometer {acceleration[0]} {acceleration[1]} {acceleration[2]}')
+        f'Accelerometer {accelerometer[0]} {accelerometer[1]} {accelerometer[2]}')
     print(
         f'Gyroscope {gyroscope[0]} {gyroscope[1]} {gyroscope[2]}')
     print(
