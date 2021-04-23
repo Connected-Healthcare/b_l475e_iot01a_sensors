@@ -143,14 +143,14 @@ int main() {
                 spec_co_gas_conc, spec_co_temp, spec_co_rel_humidity);
 
     // GPS
-    gps::gps_coordinates_s &gps_coordinates_data =
+    const gps::gps_coordinates_s &gps_coordinates_data =
         gps_obj.get_gps_coordinates();
     debugPrintf("AP6H GPS:                        Latitude(deg): %f | "
                 "Longitude(deg): %f\r\n",
                 gps_coordinates_data.latitude, gps_coordinates_data.longitude);
 
     // Heartbeat Sensor
-    const heartbeat::bioData hb_data = hb_obj.get_hb_data();
+    const heartbeat::bioData &hb_data = hb_obj.get_hb_data();
     debugPrintf("MAX32664/MAX30101 Heartbeat:     Heart Rate(bpm): %3d | "
                 "Confidence: %3d    | Oxygen(%%): %d | Status: %d\r\n",
                 hb_data.heartRate, hb_data.confidence, hb_data.oxygen,

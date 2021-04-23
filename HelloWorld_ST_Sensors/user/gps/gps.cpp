@@ -10,7 +10,7 @@
 #endif
 
 namespace gps {
-gps_coordinates_s &adafruit_PA6H::get_gps_coordinates(void) { return gps_data; }
+const gps_coordinates_s &adafruit_PA6H::get_gps_coordinates(void) { return gps_data; }
 
 void adafruit_PA6H::set_gps_coordinates(gps_coordinates_s gps_data) {
   this->gps_data = gps_data;

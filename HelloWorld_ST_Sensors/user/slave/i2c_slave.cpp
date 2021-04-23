@@ -2,7 +2,7 @@
 
 #include "user/internal/internal_sensors.hpp"
 
-#define DEBUG_PRINTF 1
+#define DEBUG_PRINTF 0
 
 #if DEBUG_PRINTF
 #define debugPrintf(...) printf(__VA_ARGS__)
@@ -92,7 +92,7 @@ void SlaveCommunication::handle_data() {
  */
 void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   switch (address) {
-  // // SPEC CO
+  // SPEC CO SENSOR
   case 0x00:
     send_spec_co_gas_concentration();
     break;
@@ -102,16 +102,7 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   case 0x02:
     send_spec_co_humidity();
     break;
-
-  // SGP30
-  // case 0x10:
-  //   send_sgp30_co2();
-  //   break;
-  // case 0x11:
-  //   send_sgp30_voc();
-  //   break;
-
-  // INTERNAL
+  // INTERNAL SENSORS
   case 0x20:
     send_hts221_temperature();
     break;
@@ -136,9 +127,11 @@ void SlaveCommunication::transmit_sensor_data(uint8_t address) {
   case 0x27:
     send_magnetometer();
     break;
+  // HEARTBEAT SENSOR
   case 0x30:
     send_heartbeat_data();
     break;
+  // GPS
   case 0x40:
     send_gps_coordinates_data();
     break;
@@ -165,20 +158,6 @@ void SlaveCommunication::send_spec_co_humidity() {
                         tx_data);
   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
 }
-
-// void SlaveCommunication::send_sgp30_co2()
-// {
-//   uint8_t tx_data[ARR_SIZE] = {0};
-//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_co2()), tx_data);
-//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-// }
-
-// void SlaveCommunication::send_sgp30_voc()
-// {
-//   uint8_t tx_data[ARR_SIZE] = {0};
-//   uint32_to_uint8_array(static_cast<uint32_t>(sgp30_.get_voc()), tx_data);
-//   slave_.write((const char *)tx_data, ARR_SIZE >> 1);
-// }
 
 void SlaveCommunication::send_hts221_temperature() {
   uint8_t tx_data[ARR_SIZE] = {0};
@@ -273,7 +252,7 @@ void SlaveCommunication::send_heartbeat_data() {
 
 void SlaveCommunication::send_gps_coordinates_data() {
   uint8_t tx_data[ARR_SIZE * 2] = {0};
-  gps::gps_coordinates_s data = gps_.get_gps_coordinates();
+  const gps::gps_coordinates_s &data = gps_.get_gps_coordinates();
 
   // Hardcoded values (Only for testing I2C data transmission to TI CC1352_R1)
   // data.latitude = -37.123456;

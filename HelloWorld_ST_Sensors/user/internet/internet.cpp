@@ -102,14 +102,14 @@ static void update_co_data(spec::CarbonMonoxide *co) {
 }
 
 static void update_hb_data(heartbeat::sparkfun_MAX32664 *hb) {
-  heartbeat::bioData hb_data = hb->get_hb_data();
+  const heartbeat::bioData &hb_data = hb->get_hb_data();
   uint8_t buffer[8] = {0};
   sprintf((char *)buffer, "%u,%u,", hb_data.heartRate, hb_data.oxygen);
   strcat((char *)send_data, (const char *)buffer);
 }
 
 static void update_gps_data(gps::adafruit_PA6H *gps) {
-  gps::gps_coordinates_s gps_data = gps->get_gps_coordinates();
+  const gps::gps_coordinates_s &gps_data = gps->get_gps_coordinates();
   uint8_t buffer[14] = {0};
   sprintf((char *)buffer, "%.2f,%.2f,", gps_data.latitude, gps_data.longitude);
   strcat((char *)send_data, (const char *)buffer);

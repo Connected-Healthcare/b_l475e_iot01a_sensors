@@ -15,9 +15,6 @@ typedef struct {
 
 bool connect_as_tcp(void);
 
-// TODO, UDP connection
-// void connect_as_udp(void);
-
 void send_sensor_data(sensors_t *sensors);
 
 } // namespace internet

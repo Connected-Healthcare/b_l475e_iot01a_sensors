@@ -11,7 +11,6 @@ void CarbonMonoxide::initialize() {
   co_thread_.start(callback(this, &CarbonMonoxide::thread_start));
 }
 
-// Private
 void CarbonMonoxide::thread_start() {
   while (recv == false) {
     co_uart_.putc('c');

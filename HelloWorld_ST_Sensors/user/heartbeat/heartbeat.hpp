@@ -196,7 +196,7 @@ private:
   const uint8_t SET_FORMAT = 0x00;
   const uint8_t ENABLE = 0x01;
   const uint8_t WRITE_SET_THRESHOLD = 0x01;
-  struct bioData body;
+  bioData body;
 };
 
 } // namespace heartbeat

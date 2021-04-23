@@ -43,7 +43,7 @@ public:
     gps_uart.attach(callback(this, &adafruit_PA6H::gps_interrupt_cb));
   }
 
-  gps_coordinates_s &get_gps_coordinates(void);
+  const gps_coordinates_s &get_gps_coordinates(void);
 
   void set_gps_coordinates(gps_coordinates_s gps_data);
 };
