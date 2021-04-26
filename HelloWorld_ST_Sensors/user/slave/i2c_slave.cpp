@@ -55,7 +55,6 @@ void SlaveCommunication::handle_data() {
       transmit_sensor_data(rx_data);
       break;
     case I2CSlave::WriteGeneral:
-      debugPrintf("Write General\r\n");
       break;
     case I2CSlave::WriteAddressed:
       slave_.read(&rx_data, 1);
@@ -241,10 +240,10 @@ void SlaveCommunication::send_heartbeat_data() {
   uint8_t tx_data[8] = {0};
   const heartbeat::bioData &data = hb_.get_hb_data();
   uint16_to_uint8_array(static_cast<uint16_t>(data.heartRate), tx_data);
-  uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.confidence),
+  uint16_to_uint8_array(static_cast<uint16_t>(data.confidence),
                         tx_data + 2);
   uint16_to_uint8_array(static_cast<uint16_t>(data.oxygen), tx_data + 4);
-  uint16_to_uint8_array(static_cast<uint16_t>(0xFF00 | data.status),
+  uint16_to_uint8_array(static_cast<uint16_t>(data.status),
                         tx_data + 6);
 
   slave_.write((const char *)tx_data, ARR_SIZE * 2);
